@@ -979,6 +979,10 @@ function drawTree ( organizedVehicles ) {
 	}
 }
 function romanize ( num ) {
+	if ( num === 0 ) {
+		return '0';
+	}
+
 	var lookup = {
 			M: 1000,
 			CM: 900,
@@ -1289,8 +1293,8 @@ function readVehicleInput () {
 		return false;
 	}
 	const rank = Number( document.querySelector( '#vehicleRank' ).value );
-	if ( !/^[0-9]{1,2}$/.test( rank.toString() ) || rank === 0 ) {
-		window.alert( 'Rank has to be a natural number between 1 and 99!' );
+	if ( !/^[0-9]{1,2}$/.test( rank.toString() ) ) {
+		window.alert( 'Rank has to be a natural number between 0 and 99!' );
 		return false;
 	}
 	const br = Number( document.querySelector( '#vehicleBr' ).value );
@@ -1351,8 +1355,8 @@ function readVehicleEditInput () {
 		return false;
 	}
 	const rank = Number( document.querySelector( '#vehicleRankEdit' ).value );
-	if ( !/^[0-9]{1,2}$/.test( rank.toString() ) || rank === 0 ) {
-		window.alert( 'Rank has to be a natural number between 1 and 99!' );
+	if ( !/^[0-9]{1,2}$/.test( rank.toString() ) ) {
+		window.alert( 'Rank has to be a natural number between 0 and 99!' );
 		return false;
 	}
 	const br = Number( document.querySelector( '#vehicleBrEdit' ).value );
