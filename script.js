@@ -5,8 +5,78 @@
 
 const vehicleList = [];
 let branchTitles = {};
-const descriptionTemplate =
-		'<h3><em>Year:</em> <strong>XXXX</strong>&nbsp;<em>Development stage:</em>&nbsp;<strong>X</strong></h3>\n\n<p>Historical description...</p>\n\n<h3><em>Primary weapon:</em> <strong>X</strong></h3>\n\n<p>Primary weapon description...</p>\n\n<h3><em>Secondary weapon:</em> <strong>X</strong></h3>\n\n<p>Secondary weapon description...</p>\n\n<h3><em>Other info:</em></h3>\n\n<p>Crew, armor, mobility etc...</p>\n\n<h3><em>Proposed BR:</em> <strong>X.X</strong></h3>\n\n<p>Justification for Battle Rating placement...</p>\n\n<p><em>Links:</em></p>\n\n<ol>\n\t<li>Source 1...</li>\n\t<li>Source 2...</li>\n\t<li>WT forum discussion on the vehicle...</li>\n</ol>\n';
+let config = null;
+let creditTypes = [];
+let currentCreditType = null;
+let tempCredits = [];
+let tempCreditsEdit = [];
+
+// Load configuration
+async function loadConfig() {
+	try {
+		const response = await fetch('config.json');
+		config = await response.json();
+		creditTypes = config.credits?.types || [];
+		return config;
+	} catch (e) {
+		console.warn('Could not load config.json, using defaults');
+		// Default credit types if config fails to load
+		creditTypes = [
+			{ id: 'modeler', name: 'Modeler', icon: '🎨', color: '#f0ad4e' },
+			{ id: 'researcher', name: 'Researcher', icon: '🔍', color: '#51cf66' },
+			{ id: 'contributor', name: 'Contributor', icon: '⭐', color: '#ff6b6b' }
+		];
+		return null;
+	}
+}
+
+// Modern structured description template
+const descriptionTemplate = `
+<div class="vehicle-info-section">
+	<h3>📅 General Information</h3>
+	<p><strong>Year:</strong> XXXX</p>
+	<p><strong>Development Stage:</strong> Prototype / Pre-production / Production / Modified</p>
+	<p><strong>Country of Origin:</strong> </p>
+</div>
+
+<div class="vehicle-info-section">
+	<h3>📖 Historical Description</h3>
+	<p>Write the historical background and service history of this vehicle here...</p>
+</div>
+
+<div class="vehicle-info-section">
+	<h3>🔫 Armament</h3>
+	<p><strong>Primary Weapon:</strong> </p>
+	<p><em>Description:</em> </p>
+	<p><strong>Secondary Weapon:</strong> </p>
+	<p><em>Description:</em> </p>
+	<p><strong>Ammunition:</strong> </p>
+</div>
+
+<div class="vehicle-info-section">
+	<h3>🛡️ Protection & Mobility</h3>
+	<p><strong>Armor:</strong> </p>
+	<p><strong>Crew:</strong> </p>
+	<p><strong>Engine:</strong> </p>
+	<p><strong>Max Speed:</strong> </p>
+	<p><strong>Suspension:</strong> </p>
+</div>
+
+<div class="vehicle-info-section">
+	<h3>⚖️ Battle Rating Proposal</h3>
+	<p><strong>Proposed BR:</strong> X.X</p>
+	<p><strong>Justification:</strong> Explain why this vehicle should have this BR...</p>
+</div>
+
+<div class="vehicle-info-section">
+	<h3>🔗 Sources & References</h3>
+	<ol>
+		<li><a href="#" target="_blank">Source 1 - Book/Website</a></li>
+		<li><a href="#" target="_blank">Source 2 - Book/Website</a></li>
+		<li><a href="#" target="_blank">WT Forum Discussion</a></li>
+	</ol>
+</div>
+`;
 const classIcons = [
 	{
 		id: 'none',
@@ -234,6 +304,15 @@ window.onclick = function ( event ) {
 // #endregion General modal listeners
 
 // #region Add modal listeners
+document.querySelector( '#navAdd' ).addEventListener( 'click', () => {
+	// Initialize credits section
+	const creditsContainer = document.querySelector( '#creditsSectionAdd' );
+	if ( creditsContainer && creditsContainer.childElementCount === 0 ) {
+		creditsContainer.appendChild( createCreditsSection( false ) );
+		selectCreditType( creditTypes[ 0 ]?.id, false );
+	}
+} );
+
 document.querySelector( '#addButton' ).addEventListener( 'click', () => {
 	const readSuccessful = readVehicleInput();
 	if ( readSuccessful ) {
@@ -262,6 +341,15 @@ document.querySelector( '#vehicleType' ).addEventListener( 'change', ( e ) => {
 // #endregion Add modal listeners
 
 // #region Edit modal listeners
+document.querySelector( '#navEdit' ).addEventListener( 'click', () => {
+	// Initialize credits section
+	const creditsContainer = document.querySelector( '#creditsSectionEdit' );
+	if ( creditsContainer && creditsContainer.childElementCount === 0 ) {
+		creditsContainer.appendChild( createCreditsSection( true ) );
+		selectCreditType( creditTypes[ 0 ]?.id, true );
+	}
+} );
+
 document.querySelector( '#editButton' ).addEventListener( 'click', () => {
 	const readSuccessful = readVehicleEditInput();
 	if ( readSuccessful ) {
@@ -302,6 +390,8 @@ $( '#editionSelect' ).on( 'change', ( e ) => {
 	} else {
 		document.querySelector( '#noneEdit' ).click();
 	}
+	// Load credits for editing
+	loadCreditsForEdit( vehicle, true );
 } );
 document.querySelector( '#vehicleImageListEditAdd' ).addEventListener( 'click', ( e ) => {
 	e.preventDefault();
@@ -721,6 +811,10 @@ function techTreeClickProcessor ( e ) {
 				.data( 'galleria' )
 				.load( [ ...vehicle.images ] );
 		document.querySelector( '#modalDesc' ).innerHTML = vehicle.description;
+		// Add credits display
+		if ( vehicle.credits && vehicle.credits.length > 0 ) {
+			renderCreditsForDisplay( vehicle.credits, document.querySelector( '#modalDesc' ) );
+		}
 		const info = document.querySelector( '.galleria-info' );
 		info.style.width = 'fit-content';
 		info.style.left = 'auto';
@@ -1243,7 +1337,8 @@ function createFolder ( folder ) {
 function isClickable ( vehicle ) {
 	const images = vehicle.images?.length > 0;
 	const description = vehicle.description?.length > 0 && vehicle.description !== descriptionTemplate;
-	return description || images;
+	const hasCredits = vehicle.credits?.length > 0;
+	return description || images || hasCredits;
 }
 function isFolderRoot ( node ) {
 	const initialNode = node;
@@ -1327,6 +1422,8 @@ function readVehicleInput () {
 			if ( image ) images.push( { image, description } );
 		} );
 
+	const credits = getCreditsArray( false );
+
 	const vehicle = {
 		name,
 		rank,
@@ -1339,11 +1436,14 @@ function readVehicleInput () {
 		description,
 		id,
 		thumbnail,
-		images
+		images,
+		credits
 	};
 	vehicleList.push( vehicle );
 	document.querySelector( '#newForm' ).reset();
 	document.querySelector( '#none' ).checked = true;
+	tempCredits = [];
+	renderCreditsList( false );
 	CKEDITOR.instances.vehicleDescription.setData( descriptionTemplate );
 	closeModal();
 	return true;
@@ -1390,6 +1490,8 @@ function readVehicleEditInput () {
 			if ( image ) images.push( { image, description } );
 		} );
 
+	const credits = getCreditsArray( true );
+
 	const vehicle = {
 		name,
 		rank,
@@ -1402,7 +1504,8 @@ function readVehicleEditInput () {
 		description,
 		id,
 		thumbnail,
-		images
+		images,
+		credits
 	};
 	vehicleList.forEach( ( element, index, array ) => {
 		if ( element.id === vehicle.id ) {
@@ -1411,6 +1514,8 @@ function readVehicleEditInput () {
 	} );
 	document.querySelector( '#editForm' ).reset();
 	document.querySelector( '#noneEdit' ).checked = true;
+	tempCreditsEdit = [];
+	renderCreditsList( true );
 	closeModal();
 	return true;
 }
@@ -1642,7 +1747,164 @@ function fillClassSelection ( edit ) {
 		document.querySelector( `#none${ edit ? 'Edit' : '' }` ).click();
 	}
 }
-function init () {
+
+// #region Credits System Functions
+function createCreditsSection( edit = false ) {
+	const container = document.createElement( 'div' );
+	container.classList.add( 'credits-section' );
+
+	const title = document.createElement( 'h4' );
+	title.innerText = 'Credits';
+	container.appendChild( title );
+
+	// Credit type selector
+	const typeSelector = document.createElement( 'div' );
+	typeSelector.classList.add( 'credit-type-selector' );
+	typeSelector.id = edit ? 'creditTypeSelectorEdit' : 'creditTypeSelector';
+
+	creditTypes.forEach( type => {
+		const btn = document.createElement( 'button' );
+		btn.classList.add( 'credit-type-btn' );
+		btn.dataset.typeId = type.id;
+		btn.innerHTML = `${ type.icon } ${ type.name }`;
+		btn.addEventListener( 'click', () => selectCreditType( type.id, edit ) );
+		typeSelector.appendChild( btn );
+	} );
+	container.appendChild( typeSelector );
+
+	// Credits list
+	const creditsList = document.createElement( 'div' );
+	creditsList.classList.add( 'credits-list' );
+	creditsList.id = edit ? 'creditsListEdit' : 'creditsList';
+	container.appendChild( creditsList );
+
+	// Add credit input
+	const addInput = document.createElement( 'div' );
+	addInput.classList.add( 'add-credit-input' );
+
+	const nameInput = document.createElement( 'input' );
+	nameInput.type = 'text';
+	nameInput.placeholder = 'Enter name...';
+	nameInput.id = edit ? 'creditNameInputEdit' : 'creditNameInput';
+
+	const addBtn = document.createElement( 'button' );
+	addBtn.innerText = 'Add';
+	addBtn.addEventListener( 'click', () => addCredit( edit ) );
+
+	addInput.appendChild( nameInput );
+	addInput.appendChild( addBtn );
+	container.appendChild( addInput );
+
+	return container;
+}
+
+function selectCreditType( typeId, edit = false ) {
+	currentCreditType = typeId;
+	const selector = document.querySelector( edit ? '#creditTypeSelectorEdit' : '#creditTypeSelector' );
+	selector.querySelectorAll( '.credit-type-btn' ).forEach( btn => {
+		btn.classList.toggle( 'active', btn.dataset.typeId === typeId );
+	} );
+}
+
+function addCredit( edit = false ) {
+	const input = document.querySelector( edit ? '#creditNameInputEdit' : '#creditNameInput' );
+	const name = input.value.trim();
+
+	if ( !name || !currentCreditType ) {
+		alert( 'Please select a credit type and enter a name' );
+		return;
+	}
+
+	const creditType = creditTypes.find( t => t.id === currentCreditType );
+	const credit = {
+		name,
+		type: currentCreditType,
+		typeName: creditType.name,
+		icon: creditType.icon,
+		color: creditType.color
+	};
+
+	if ( edit ) {
+		tempCreditsEdit.push( credit );
+	} else {
+		tempCredits.push( credit );
+	}
+
+	input.value = '';
+	renderCreditsList( edit );
+}
+
+function removeCredit( index, edit = false ) {
+	if ( edit ) {
+		tempCreditsEdit.splice( index, 1 );
+	} else {
+		tempCredits.splice( index, 1 );
+	}
+	renderCreditsList( edit );
+}
+
+function renderCreditsList( edit = false ) {
+	const list = document.querySelector( edit ? '#creditsListEdit' : '#creditsList' );
+	const credits = edit ? tempCreditsEdit : tempCredits;
+
+	list.innerHTML = '';
+	credits.forEach( ( credit, index ) => {
+		const entry = document.createElement( 'div' );
+		entry.classList.add( 'credit-entry' );
+
+		entry.innerHTML = `
+			<span class="credit-icon">${ credit.icon }</span>
+			<span class="credit-name">${ credit.name }</span>
+			<span class="credit-type">${ credit.typeName }</span>
+			<span class="remove-credit" onclick="removeCredit(${ index }, ${ edit })">❌</span>
+		`;
+
+		list.appendChild( entry );
+	} );
+}
+
+function renderCreditsForDisplay( credits, container ) {
+	if ( !credits || credits.length === 0 ) return;
+
+	const creditsDiv = document.createElement( 'div' );
+	creditsDiv.classList.add( 'vehicle-credits' );
+
+	const title = document.createElement( 'h4' );
+	title.innerText = 'Credits';
+	creditsDiv.appendChild( title );
+
+	credits.forEach( credit => {
+		const tag = document.createElement( 'span' );
+		tag.classList.add( 'credit-tag' );
+		tag.style.background = `${ credit.color }20`;
+		tag.style.border = `1px solid ${ credit.color }`;
+		tag.style.color = credit.color;
+		tag.innerHTML = `${ credit.icon } ${ credit.name } (${ credit.typeName })`;
+		creditsDiv.appendChild( tag );
+	} );
+
+	container.appendChild( creditsDiv );
+}
+
+function loadCreditsForEdit( vehicle, edit = false ) {
+	if ( edit ) {
+		tempCreditsEdit = vehicle.credits ? [ ...vehicle.credits ] : [];
+		renderCreditsList( true );
+	} else {
+		tempCredits = [];
+		renderCreditsList( false );
+	}
+}
+
+function getCreditsArray( edit = false ) {
+	return edit ? tempCreditsEdit : tempCredits;
+}
+// #endregion Credits System Functions
+
+async function init () {
+	// Load configuration first
+	await loadConfig();
+
 	// Modal slideshow initialization
 	Galleria.loadTheme( 'https://cdnjs.cloudflare.com/ajax/libs/galleria/1.6.1/themes/classic/galleria.classic.min.js' );
 	Galleria.run( '.galleria' );

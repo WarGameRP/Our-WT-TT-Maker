@@ -1,0 +1,114 @@
+{
+  "credits": {
+    "types": [
+      {
+        "id": "modeler",
+        "name": "Modeler",
+        "icon": "🎨",
+        "color": "#f0ad4e"
+      },
+      {
+        "id": "historian",
+        "name": "Historian",
+        "icon": "📚",
+        "color": "#4dabf7"
+      },
+      {
+        "id": "researcher",
+        "name": "Researcher",
+        "icon": "🔍",
+        "color": "#51cf66"
+      },
+      {
+        "id": "contributor",
+        "name": "Contributor",
+        "icon": "⭐",
+        "color": "#ff6b6b"
+      },
+      {
+        "id": "tester",
+        "name": "Tester",
+        "icon": "🧪",
+        "color": "#a9e34b"
+      }
+    ],
+    "settings": {
+      "allowMultipleCredits": true,
+      "showIcons": true,
+      "showInBadge": false
+    }
+  },
+  "vehicleDescription": {
+    "sections": [
+      {
+        "id": "year",
+        "label": "Year",
+        "type": "text",
+        "placeholder": "XXXX"
+      },
+      {
+        "id": "dev_stage",
+        "label": "Development Stage",
+        "type": "select",
+        "options": ["Prototype", "Pre-production", "Production", "Modified"]
+      },
+      {
+        "id": "primary_weapon",
+        "label": "Primary Weapon",
+        "type": "text",
+        "placeholder": "e.g. 120mm smoothbore gun"
+      },
+      {
+        "id": "secondary_weapon",
+        "label": "Secondary Weapon",
+        "type": "text",
+        "placeholder": "e.g. 7.62mm machine gun"
+      },
+      {
+        "id": "armor",
+        "label": "Armor",
+        "type": "textarea",
+        "placeholder": "Describe armor protection..."
+      },
+      {
+        "id": "mobility",
+        "label": "Mobility",
+        "type": "textarea",
+        "placeholder": "Engine, speed, transmission..."
+      },
+      {
+        "id": "proposed_br",
+        "label": "Proposed BR",
+        "type": "text",
+        "placeholder": "X.X"
+      },
+      {
+        "id": "br_reasoning",
+        "label": "BR Reasoning",
+        "type": "textarea",
+        "placeholder": "Justification for Battle Rating placement..."
+      },
+      {
+        "id": "history",
+        "label": "Historical Description",
+        "type": "richtext",
+        "placeholder": "Historical background and service history..."
+      },
+      {
+        "id": "sources",
+        "label": "Sources & Links",
+        "type": "list",
+        "placeholder": "Add reference links..."
+      }
+    ]
+  },
+  "ui": {
+    "theme": {
+      "primaryColor": "#f0ad4e",
+      "bgColor": "#0d1117",
+      "cardBg": "rgba(22, 27, 34, 0.8)",
+      "textColor": "#c9d1d9",
+      "borderColor": "#30363d"
+    }
+  }
+}

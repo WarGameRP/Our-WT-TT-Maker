@@ -1,15 +1,22 @@
 /*
-* Prefixed by https://autoprefixer.github.io
-* PostCSS: v8.3.6,
-* Autoprefixer: v10.3.1
-* Browsers: last 4 version
+* Modernized WT Tech-Tree Maker Styles
+* Dark theme inspired by GitHub's dark mode
 */
 
 :root {
-	--main_bg: rgb(48, 48, 48);
-	--text_col: white;
-
-	--tech_tree_bg: rgb(36, 46, 51);
+	--main_bg: #0d1117;
+	--text_col: #c9d1d9;
+	--tech_tree_bg: #161b22;
+	--card_bg: rgba(22, 27, 34, 0.9);
+	--accent_color: #f0ad4e;
+	--accent_gradient: linear-gradient(135deg, #f0ad4e 0%, #d98e2b 100%);
+	--border_color: #30363d;
+	--hover_color: #21262d;
+	--success_color: #238636;
+	--danger_color: #da3633;
+	--info_color: #4dabf7;
+	--text_muted: #8b949e;
+	--shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 /*
@@ -716,4 +723,594 @@ footer img {
 	margin-top: 10px;
 	margin-bottom: 3px;
 	width: fit-content;
+}
+
+/* ==================== MODERN UI UPDATES ==================== */
+
+/* Modern Navigation */
+nav {
+	position: fixed;
+	left: 0;
+	top: 0;
+	z-index: 3;
+	font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+nav div {
+	background: var(--card_bg);
+	padding: 8px 12px;
+	border-radius: 0 8px 8px 0;
+	border: 1px solid var(--border_color);
+	border-left: none;
+	cursor: pointer;
+	text-align: center;
+	transition: all 0.2s ease;
+	font-size: 0.85rem;
+	font-weight: 500;
+	margin-bottom: 2px;
+}
+
+nav div:hover {
+	background: var(--hover_color);
+	border-color: var(--accent_color);
+	transform: translateX(3px);
+}
+
+nav div:nth-child(odd) {
+	background: var(--card_bg);
+}
+
+nav div:nth-child(odd):hover {
+	background: var(--hover_color);
+}
+
+/* Modern Modal Styling */
+.modal {
+	display: none;
+	position: fixed;
+	z-index: 4;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	background: rgba(0, 0, 0, 0.85);
+	backdrop-filter: blur(8px);
+}
+
+.modal-content {
+	background: var(--tech_tree_bg);
+	border: 1px solid var(--border_color);
+	border-radius: 16px;
+	width: 100%;
+	max-width: 800px;
+	max-height: 85vh;
+	overflow-y: auto;
+	position: relative;
+	margin: 5% auto;
+	box-shadow: var(--shadow);
+	animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-header {
+	padding: 16px 24px;
+	background: var(--hover_color);
+	border-bottom: 1px solid var(--border_color);
+	border-radius: 16px 16px 0 0;
+	color: var(--text_col);
+}
+
+.modal-header h2 {
+	margin: 0;
+	font-size: 1.3rem;
+	font-weight: 600;
+	color: var(--accent_color);
+}
+
+.modal-body {
+	padding: 24px;
+}
+
+.close {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid var(--border_color);
+	color: var(--text_muted);
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.5rem;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.close:hover {
+	background: rgba(255, 77, 77, 0.1);
+	color: var(--danger_color);
+	border-color: var(--danger_color);
+	transform: rotate(90deg);
+}
+
+/* Modern Form Elements */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+	background: var(--bg_color);
+	border: 1px solid var(--border_color);
+	border-radius: 6px;
+	padding: 8px 12px;
+	color: var(--text_col);
+	font-size: 0.9rem;
+	transition: all 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+	outline: none;
+	border-color: var(--accent_color);
+	box-shadow: 0 0 0 3px rgba(240, 173, 78, 0.1);
+}
+
+/* Modern Buttons */
+#addButton,
+#editButton,
+#backupDownload,
+#exportTechTreeButton,
+#copyCloneUtility {
+	display: block;
+	margin: 20px auto 0;
+	padding: 12px 24px;
+	font-size: 1rem;
+	font-weight: 600;
+	background: var(--accent_gradient);
+	color: white;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+#addButton:hover,
+#editButton:hover,
+#backupDownload:hover,
+#exportTechTreeButton:hover,
+#copyCloneUtility:hover {
+	filter: brightness(1.1);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(240, 173, 78, 0.3);
+}
+
+#deleteAllButton {
+	display: block;
+	margin: 10px auto;
+	background: var(--danger_color);
+	color: white;
+	font-weight: 600;
+	padding: 12px 20px;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+#deleteAllButton:hover {
+	filter: brightness(1.2);
+	transform: translateY(-2px);
+}
+
+#deleteVehicleButton {
+	background: var(--danger_color);
+	color: white;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 500;
+	transition: all 0.2s;
+}
+
+#deleteVehicleButton:hover {
+	filter: brightness(1.2);
+}
+
+#vehicleImageListAdd,
+#vehicleImageListEditAdd {
+	display: block;
+	margin-top: 10px;
+	background: var(--success_color);
+	color: white;
+	border: none;
+	border-radius: 6px;
+	padding: 8px 16px;
+	cursor: pointer;
+	font-weight: 500;
+	transition: all 0.2s;
+}
+
+#vehicleImageListAdd:hover,
+#vehicleImageListEditAdd:hover {
+	filter: brightness(1.1);
+	transform: translateY(-1px);
+}
+
+/* ==================== CREDITS SYSTEM ==================== */
+
+.credits-section {
+	margin-top: 20px;
+	padding: 16px;
+	background: var(--card_bg);
+	border: 1px solid var(--border_color);
+	border-radius: 12px;
+}
+
+.credits-section h4 {
+	margin: 0 0 12px 0;
+	color: var(--accent_color);
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.credit-type-selector {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.credit-type-btn {
+	padding: 6px 12px;
+	border: 1px solid var(--border_color);
+	border-radius: 20px;
+	background: var(--tech_tree_bg);
+	color: var(--text_col);
+	cursor: pointer;
+	transition: all 0.2s;
+	font-size: 0.85rem;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.credit-type-btn:hover {
+	border-color: var(--accent_color);
+	background: var(--hover_color);
+}
+
+.credit-type-btn.active {
+	background: var(--accent_gradient);
+	border-color: var(--accent_color);
+	color: white;
+}
+
+.credit-entry {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 12px;
+	background: var(--tech_tree_bg);
+	border: 1px solid var(--border_color);
+	border-radius: 8px;
+	margin-bottom: 8px;
+}
+
+.credit-entry .credit-icon {
+	font-size: 1.2rem;
+}
+
+.credit-entry .credit-name {
+	flex: 1;
+	font-weight: 500;
+}
+
+.credit-entry .credit-type {
+	font-size: 0.8rem;
+	color: var(--text_muted);
+	background: var(--hover_color);
+	padding: 2px 8px;
+	border-radius: 12px;
+}
+
+.credit-entry .remove-credit {
+	cursor: pointer;
+	color: var(--danger_color);
+	font-size: 1.2rem;
+	transition: transform 0.2s;
+}
+
+.credit-entry .remove-credit:hover {
+	transform: scale(1.2);
+}
+
+.add-credit-input {
+	display: flex;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.add-credit-input input {
+	flex: 1;
+}
+
+.add-credit-input button {
+	background: var(--success_color);
+	color: white;
+	border: none;
+	border-radius: 6px;
+	padding: 8px 16px;
+	cursor: pointer;
+	font-weight: 500;
+}
+
+/* Credits Display in Vehicle Modal */
+.vehicle-credits {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--border_color);
+}
+
+.vehicle-credits h4 {
+	color: var(--accent_color);
+	margin-bottom: 12px;
+	font-size: 1rem;
+}
+
+.credit-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 12px;
+	margin: 4px;
+	border-radius: 16px;
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+/* ==================== VEHICLE DESCRIPTION SECTIONS ==================== */
+
+.description-sections {
+	margin-top: 16px;
+}
+
+.description-section {
+	margin-bottom: 16px;
+	padding: 16px;
+	background: var(--card_bg);
+	border: 1px solid var(--border_color);
+	border-radius: 12px;
+}
+
+.description-section h5 {
+	margin: 0 0 12px 0;
+	color: var(--accent_color);
+	font-size: 0.95rem;
+	font-weight: 600;
+}
+
+.description-section input,
+.description-section textarea,
+.description-section select {
+	width: 100%;
+	margin-bottom: 8px;
+}
+
+/* ==================== ANIMATIONS ==================== */
+
+@keyframes slideUp {
+	from {
+		transform: translateY(30px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* ==================== SCROLLBAR ==================== */
+
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--accent_color) var(--tech_tree_bg);
+}
+
+*::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+	background: var(--tech_tree_bg);
+}
+
+*::-webkit-scrollbar-thumb {
+	background: var(--accent_color);
+	border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+	background: #d98e2b;
+}
+
+/* ==================== TECH TREE ENHANCEMENTS ==================== */
+
+#techTreeName {
+	display: block;
+	margin: 20px auto;
+	text-align: center;
+	height: auto;
+	font-size: 2rem;
+	font-weight: 700;
+	max-width: 95vw;
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid var(--border_color);
+	color: var(--text_col);
+	padding: 8px 16px;
+	transition: border-color 0.2s;
+}
+
+#techTreeName:focus {
+	outline: none;
+	border-bottom-color: var(--accent_color);
+}
+
+#techTreeNameLabel h3,
+#techTreeMainDescLabel h3 {
+	color: var(--accent_color);
+	font-weight: 600;
+	margin-bottom: 8px;
+}
+
+/* Modern Links */
+a {
+	color: var(--accent_color);
+	text-decoration: none;
+	transition: color 0.2s;
+}
+
+a:hover {
+	color: #d98e2b;
+	text-decoration: underline;
+}
+
+/* Footer Modernization */
+footer {
+	margin-top: 50px;
+	padding: 30px;
+	display: flex;
+	justify-content: space-evenly;
+	flex-wrap: wrap;
+	max-width: 900px;
+	margin: 50px auto 0;
+	background: var(--card_bg);
+	border-top: 1px solid var(--border_color);
+	border-radius: 16px 16px 0 0;
+}
+
+footer div {
+	text-align: center;
+	padding: 10px;
+}
+
+footer a {
+	display: block;
+	border-bottom: none;
+	border-radius: 8px;
+	padding: 10px 16px;
+	text-decoration: none;
+	width: fit-content;
+	margin: auto;
+	background: var(--tech_tree_bg);
+	border: 1px solid var(--border_color);
+	transition: all 0.2s;
+}
+
+footer a:hover {
+	border-color: var(--accent_color);
+	transform: translateY(-3px);
+	text-decoration: none;
+}
+
+footer i {
+	display: block;
+	padding-top: 8px;
+	font-size: 0.85rem;
+	color: var(--text_muted);
+}
+
+footer img {
+	width: 28px;
+	vertical-align: middle;
+	margin-left: 8px;
+}
+
+/* Class Icon Modernization */
+.classIconContainer input:checked~svg {
+	border-color: var(--accent_color) !important;
+	filter: drop-shadow(0 0 5px rgba(240, 173, 78, 0.5));
+}
+
+#vehicleClassIcons svg:hover,
+#vehicleClassIconsEdit svg:hover {
+	border-color: var(--accent_color);
+}
+
+/* Tooltip Modernization */
+.tooltip .tooltipText {
+	background: var(--card_bg);
+	border: 1px solid var(--border_color);
+	border-radius: 8px;
+	padding: 12px;
+	color: var(--text_col);
+	font-size: 0.85rem;
+	box-shadow: var(--shadow);
+	max-width: 350px;
+	line-height: 1.5;
+}
+
+/* Code Font Modernization */
+.codeFont {
+	background: var(--hover_color);
+	color: var(--accent_color);
+	font-style: normal;
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-family: 'Consolas', 'Monaco', monospace;
+	font-size: 0.9em;
+}
+
+/* Vehicle Info Sections in Modal */
+.vehicle-info-section {
+	margin: 20px 0;
+	padding: 16px;
+	background: var(--card_bg);
+	border: 1px solid var(--border_color);
+	border-radius: 12px;
+}
+
+.vehicle-info-section h3 {
+	color: var(--accent_color);
+	font-size: 1.1rem;
+	margin-bottom: 12px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--border_color);
+}
+
+.vehicle-info-section p {
+	margin: 8px 0;
+	line-height: 1.6;
+}
+
+.vehicle-info-section ol {
+	padding-left: 20px;
+}
+
+.vehicle-info-section li {
+	margin: 8px 0;
+}
+
+.vehicle-info-section a {
+	color: var(--accent_color);
+	text-decoration: none;
+}
+
+.vehicle-info-section a:hover {
+	text-decoration: underline;
 }

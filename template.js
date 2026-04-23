@@ -99,6 +99,43 @@ function createHtmlContent ( data ) {
 
         document.querySelector( '#techTree' ).addEventListener( 'click', techTreeClickProcessor );
 
+        // Credits display function for exported tree
+        function renderCreditsForDisplay( credits, container ) {
+            if ( !credits || credits.length === 0 ) return;
+
+            const creditsDiv = document.createElement( 'div' );
+            creditsDiv.classList.add( 'vehicle-credits' );
+            creditsDiv.style.marginTop = '16px';
+            creditsDiv.style.paddingTop = '16px';
+            creditsDiv.style.borderTop = '1px solid #30363d';
+
+            const title = document.createElement( 'h4' );
+            title.innerText = 'Credits';
+            title.style.color = '#f0ad4e';
+            title.style.marginBottom = '12px';
+            title.style.fontSize = '1rem';
+            creditsDiv.appendChild( title );
+
+            credits.forEach( credit => {
+                const tag = document.createElement( 'span' );
+                tag.style.display = 'inline-flex';
+                tag.style.alignItems = 'center';
+                tag.style.gap = '6px';
+                tag.style.padding = '4px 12px';
+                tag.style.margin = '4px';
+                tag.style.borderRadius = '16px';
+                tag.style.fontSize = '0.85rem';
+                tag.style.fontWeight = '500';
+                tag.style.background = credit.color + '20';
+                tag.style.border = '1px solid ' + credit.color;
+                tag.style.color = credit.color;
+                tag.innerHTML = credit.icon + ' ' + credit.name + ' (' + credit.typeName + ')';
+                creditsDiv.appendChild( tag );
+            } );
+
+            container.appendChild( creditsDiv );
+        }
+
         ${ data.functions.map( fn => fn.toString() ).join( ';' ) }
     </script>
 </html>
