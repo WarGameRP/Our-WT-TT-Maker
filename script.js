@@ -22,9 +22,13 @@ async function loadConfig() {
 		console.warn('Could not load config.json, using defaults');
 		// Default credit types if config fails to load
 		creditTypes = [
-			{ id: 'modeler', name: 'Modeler', icon: '🎨', color: '#f0ad4e' },
-			{ id: 'researcher', name: 'Researcher', icon: '🔍', color: '#51cf66' },
-			{ id: 'contributor', name: 'Contributor', icon: '⭐', color: '#ff6b6b' }
+			{ id: 'infanterie', name: 'Crédits Infanterie', icon: '🪖', color: '#FFFFFF' },
+			{ id: 'blindes', name: 'Crédits Blindés', icon: '🛡️', color: '#D11B1B' },
+			{ id: 'mecanises', name: 'Crédits Mécanisés', icon: '🚛', color: '#B06EFF' },
+			{ id: 'motorises', name: 'Crédits Motorisés', icon: '🚗', color: '#A1A1A1' },
+			{ id: 'support', name: 'Crédits Support', icon: '🚑', color: '#70CC41' },
+			{ id: 'aeriens', name: 'Crédits Aériens', icon: '✈️', color: '#A6DEFF' },
+			{ id: 'invitation', name: 'Crédits d\'Invitations', icon: '✉️', color: '#FF8F00' }
 		];
 		return null;
 	}
@@ -582,22 +586,29 @@ document.querySelector( '#exportTechTreeButton' ).addEventListener( 'click', asy
 	// Collecting data
 	const title = document.querySelector( '#techTreeName' ).value;
 	const outputData = await window.techTreeMainDescEditor.save();
-	const description = outputData;
+	const description = convertEditorBlocksToHtml( outputData.blocks );
 	consumeBranchHeaders();
 	const tree = document.querySelector( '#techTree' ).innerHTML;
 	const vehicles = JSON.stringify( vehicleList );
-	const cssRules = [ ...document.styleSheets ]
-		.find( sheet => sheet.title === 'WT_TECH_TREE_MAKER_STYLES' )
-		.cssRules;
-	const packedStyles = [ ...cssRules ]
-		.map( rule => rule.cssText )
-		.join( '' );
+	const sheet = [ ...document.styleSheets ].find( s => s.title === 'WT_TECH_TREE_MAKER_STYLES' );
+	const cssRules = sheet ? sheet.cssRules : [];
 	const functions = [
 		techTreeClickProcessor,
 		isFolderRoot,
 		isClickable,
-		closeModal
+		closeModal,
+		convertEditorBlocksToHtml,
+		renderCreditsForDisplay
 	];
+
+	// Filter out invalid CSS rules (like empty properties that can break the export)
+	const packedStyles = [ ...cssRules ]
+		.map( rule => {
+			let text = rule.cssText;
+			// Remove empty properties that browser sometimes adds like "border-top-width: ;"
+			return text.replace( /[\w-]+\s*:\s*;/g, '' );
+		} )
+		.join( '\n' );
 
 	const data = {
 		title,
@@ -813,48 +824,15 @@ function techTreeClickProcessor ( e ) {
 		} );
 		if ( !isClickable( vehicle ) ) return;
 		document.querySelector( '#modal_title' ).innerText = vehicle.name;
-		if ( vehicle.images )
-			$( '.galleria' )
-				.data( 'galleria' )
-				.load( [ ...vehicle.images ] );
+		if ( vehicle.images && vehicle.images.length > 0 ) {
+			const galleria = $( '.galleria' ).data( 'galleria' );
+			if ( galleria ) {
+				galleria.load( [ ...vehicle.images ] );
+			}
+		}
 		// Convert Editor.js JSON to HTML for display
 		if ( vehicle.description && typeof vehicle.description === 'object' && vehicle.description.blocks ) {
-			let html = '';
-			vehicle.description.blocks.forEach( block => {
-				if ( block.type === 'header' ) {
-					const level = block.data.level || 1;
-					html += `<h${level}>${block.data.text}</h${level}>`;
-				} else if ( block.type === 'paragraph' ) {
-					html += `<p>${block.data.text || ''}</p>`;
-				} else if ( block.type === 'list' ) {
-					const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
-					html += `<${tag}>`;
-					block.data.items.forEach( item => {
-						html += `<li>${item}</li>`;
-					} );
-					html += `</${tag}>`;
-				} else if ( block.type === 'credit' ) {
-					html += `<div class="vehicle-credit" style="color: ${block.data.color}; margin: 5px 0; padding: 8px; background-color: rgba(22, 27, 34, 0.5); border-radius: 4px; border-left: 3px solid ${block.data.color};">${block.data.icon} ${block.data.text || ''} <strong>${block.data.typeName}</strong>: ${block.data.value}</div>`;
-				} else if ( block.type === 'table' ) {
-					html += `<table border="1" style="border-collapse: collapse; width: 100%; margin: 10px 0;">`;
-					if ( block.data.content && block.data.content.length > 0 ) {
-						block.data.content.forEach( row => {
-							html += '<tr>';
-							row.forEach( cell => {
-								html += `<td style="padding: 5px; border: 1px solid #444;">${cell}</td>`;
-							} );
-							html += '</tr>';
-						} );
-					}
-					html += '</table>';
-				} else if ( block.type === 'image' ) {
-					html += `<div style="margin: 10px 0;"><img src="${block.data.url}" style="max-width: 100%;"></div>`;
-					if ( block.data.caption ) {
-						html += `<p style="font-style: italic; color: #888;">${block.data.caption}</p>`;
-					}
-				}
-			} );
-			document.querySelector( '#modalDesc' ).innerHTML = html;
+			document.querySelector( '#modalDesc' ).innerHTML = convertEditorBlocksToHtml( vehicle.description.blocks );
 		} else if ( typeof vehicle.description === 'string' ) {
 			document.querySelector( '#modalDesc' ).innerHTML = vehicle.description;
 		} else {
@@ -1028,8 +1006,25 @@ function isFollowApplied ( array ) {
 	return true;
 }
 function drawTree ( organizedVehicles ) {
-	const tbody = document.querySelector( '#techTree' );
-	tbody.innerHTML = '';
+	const techTreeDiv = document.querySelector( '#techTree' );
+	techTreeDiv.innerHTML = '';
+
+	// Add tech tree description at the top if it exists
+	const techTreeDescription = localStorage.getItem( 'description' );
+	if ( techTreeDescription ) {
+		try {
+			const parsedDesc = JSON.parse( techTreeDescription );
+			if ( parsedDesc.blocks && parsedDesc.blocks.length > 0 ) {
+				const descDiv = document.createElement( 'div' );
+				descDiv.className = 'tech-tree-main-description';
+				descDiv.innerHTML = convertEditorBlocksToHtml( parsedDesc.blocks );
+				techTreeDiv.appendChild( descDiv );
+			}
+		} catch ( e ) {
+			console.error( 'Error rendering tech tree description:', e );
+		}
+	}
+
 	const ranks = [];
 	const branches = [];
 	for ( const region in organizedVehicles ) {
@@ -1083,7 +1078,7 @@ function drawTree ( organizedVehicles ) {
 			branchDiv.appendChild( filler );
 			rankDiv.appendChild( branchDiv );
 		}
-		techTree.appendChild( rankDiv );
+		techTreeDiv.appendChild( rankDiv );
 	}
 
 	affixFolderNumbers();
@@ -1744,11 +1739,12 @@ function closeModal () {
 	document.querySelectorAll( '.modal' ).forEach( ( modal ) => {
 		modal.style.display = 'none';
 	} );
-	$( '.galleria' ).data( 'galleria' )
-		.splice( 0, $( '.galleria' ).data( 'galleria' )
-			.getDataLength() );
-	$( '.galleria' ).data( 'galleria' )
-		.destroy();
+
+	const galleria = $( '.galleria' ).data( 'galleria' );
+	if ( galleria ) {
+		galleria.splice( 0, galleria.getDataLength() );
+		galleria.destroy();
+	}
 	Galleria.run( '.galleria' );
 }
 function fillClassSelection ( edit ) {
@@ -1868,7 +1864,7 @@ function addCredit( edit = false ) {
 		value: parseFloat( value ),
 		type: currentCreditType,
 		typeName: creditType.name,
-		icon: creditType.icon,
+		icon: creditType.icon || '',
 		color: creditType.color
 	};
 
@@ -1900,8 +1896,9 @@ function renderCreditsList( edit = false ) {
 		const entry = document.createElement( 'div' );
 		entry.classList.add( 'credit-entry' );
 
+		const iconHtml = credit.icon ? `<span class="credit-icon">${ credit.icon }</span>` : '';
 		entry.innerHTML = `
-			<span class="credit-icon">${ credit.icon }</span>
+			${ iconHtml }
 			<span class="credit-value">${ credit.value }</span>
 			<span class="credit-type">${ credit.typeName }</span>
 			<span class="remove-credit" onclick="removeCredit(${ index }, ${ edit })">❌</span>
@@ -1927,7 +1924,8 @@ function renderCreditsForDisplay( credits, container ) {
 		tag.style.background = `${ credit.color }20`;
 		tag.style.border = `1px solid ${ credit.color }`;
 		tag.style.color = credit.color;
-		tag.innerHTML = `${ credit.icon } ${ credit.value } (${ credit.typeName })`;
+		const iconText = credit.icon ? `${ credit.icon } ` : '';
+		tag.innerHTML = `${ iconText }${ credit.value } (${ credit.typeName })`;
 		creditsDiv.appendChild( tag );
 	} );
 
@@ -2010,6 +2008,37 @@ async function init () {
 		]
 	};
 
+	// Loading save from local storage
+	const branchTitlesSave = localStorage.getItem( 'branchTitles' );
+	if ( branchTitlesSave ) {
+		branchTitles = JSON.parse( branchTitlesSave );
+	}
+	const save = localStorage.getItem( 'save' );
+	if ( save ) {
+		const arr = JSON.parse( save );
+		arr.forEach( ( element ) => {
+			vehicleList.push( element );
+		} );
+		fillEditSelection( vehicleList );
+		updateVehicleOrderList();
+	}
+
+	const techTreeTitle = localStorage.getItem( 'title' );
+	if ( techTreeTitle ) {
+		document.querySelector( '#techTreeName' ).value = techTreeTitle;
+	}
+
+	// Prepare tech tree description data
+	let initialTechTreeDescription = { blocks: [] };
+	const techTreeDescriptionSave = localStorage.getItem( 'description' );
+	if ( techTreeDescriptionSave ) {
+		try {
+			initialTechTreeDescription = JSON.parse( techTreeDescriptionSave );
+		} catch ( e ) {
+			console.error( 'Error parsing tech tree description:', e );
+		}
+	}
+
 	// Initialize Editor.js instances
 	window.vehicleDescriptionEditor = new EditorJS({
 		holder: 'vehicleDescription',
@@ -2036,6 +2065,7 @@ async function init () {
 		placeholder: 'Let`s write an awesome story!'
 	});
 
+	let onChangeTimeout;
 	window.techTreeMainDescEditor = new EditorJS({
 		holder: 'techTreeMainDesc',
 		tools: {
@@ -2045,61 +2075,18 @@ async function init () {
 			table: window.Table,
 			credit: CreditTool
 		},
+		data: initialTechTreeDescription,
 		placeholder: 'Here you can write description of your tech tree as a whole.',
 		onChange: async () => {
-			const outputData = await window.techTreeMainDescEditor.save();
-			localStorage.setItem('description', JSON.stringify(outputData));
+			clearTimeout( onChangeTimeout );
+			onChangeTimeout = setTimeout( async () => {
+				const outputData = await window.techTreeMainDescEditor.save();
+				localStorage.setItem( 'description', JSON.stringify( outputData ) );
+				drawTree( organizeTree( vehicleList ) );
+			}, 500 );
 		}
 	});
 
-	// Adding class icon selection
-	fillClassSelection( false );
-	fillClassSelection( true );
-
-	// Loading save from local storage
-	const branchTitlesSave = localStorage.getItem( 'branchTitles' );
-	if ( branchTitlesSave ) {
-		branchTitles = JSON.parse( branchTitlesSave );
-	}
-	const save = localStorage.getItem( 'save' );
-	if ( save ) {
-		const arr = JSON.parse( save );
-		arr.forEach( ( element ) => {
-			vehicleList.push( element );
-		} );
-		fillEditSelection( vehicleList );
-		updateVehicleOrderList();
-		drawTree( organizeTree( vehicleList ) );
-	}
-	const techTreeTitle = localStorage.getItem( 'title' );
-	if ( techTreeTitle ) {
-		document.querySelector( '#techTreeName' ).value = techTreeTitle;
-	}
-	const techTreeDescription = localStorage.getItem( 'description' );
-	if ( techTreeDescription ) {
-		try {
-			const parsedDesc = JSON.parse(techTreeDescription);
-			setTimeout(() => {
-				try {
-					if (window.techTreeMainDescEditor && window.techTreeMainDescEditor.render && parsedDesc.blocks) {
-						window.techTreeMainDescEditor.render(parsedDesc).catch(e => console.error('Editor render error:', e));
-					}
-				} catch(err) {
-					console.error('Editor initialization error:', err);
-				}
-			}, 300);
-		} catch(e) {
-			setTimeout(() => {
-				try {
-					if (window.techTreeMainDescEditor && window.techTreeMainDescEditor.render) {
-						window.techTreeMainDescEditor.render({ blocks: [] }).catch(e => console.error('Editor render error:', e));
-					}
-				} catch(err) {
-					console.error('Editor initialization error:', err);
-				}
-			}, 300);
-		}
-	}
 	let settingsSave = localStorage.getItem( 'settings' );
 	if ( settingsSave ) {
 		settingsSave = JSON.parse( settingsSave );
@@ -2113,6 +2100,10 @@ async function init () {
 		document.querySelector( `input[name="thumbnailStyle"][value="${ settings.thumbnailStyle }"]` ).checked = true;
 		document.querySelector( `input[name="badgeStyle"][value="${ settings.badgeStyle }"]` ).checked = true;
 	}
+
+	// Adding class icon selection
+	fillClassSelection( false );
+	fillClassSelection( true );
 
 	drawTree( organizeTree( vehicleList ) );
 }
@@ -2128,6 +2119,59 @@ function updateMenuDisplay () {
 		hideButton.innerText = 'Hide Menu';
 		navTabs.forEach( tab => tab.style.display = 'block' );
 	}
+}
+
+/**
+ * Converts Editor.js blocks to HTML string
+ * @param {Array} blocks 
+ * @returns {string}
+ */
+function convertEditorBlocksToHtml ( blocks ) {
+	if ( !blocks || !blocks.length ) return '';
+
+	let html = '';
+	blocks.forEach( block => {
+		switch ( block.type ) {
+		case 'header':
+			const level = block.data.level || 1;
+			html += `<h${ level }>${ block.data.text }</h${ level }>`;
+			break;
+		case 'paragraph':
+			html += `<p>${ block.data.text || '' }</p>`;
+			break;
+		case 'list':
+			const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+			html += `<${ tag }>`;
+			block.data.items.forEach( item => {
+				html += `<li>${ item }</li>`;
+			} );
+			html += `</${ tag }>`;
+			break;
+		case 'credit':
+			html += `<div class="vehicle-credit" style="color: ${ block.data.color }; margin: 5px 0; padding: 8px; background-color: rgba(22, 27, 34, 0.5); border-radius: 4px; border-left: 3px solid ${ block.data.color };">${ block.data.icon } ${ block.data.text || '' } <strong>${ block.data.typeName }</strong>: ${ block.data.value }</div>`;
+			break;
+		case 'table':
+			html += `<table border="1" style="border-collapse: collapse; width: 100%; margin: 10px 0;">`;
+			if ( block.data.content && block.data.content.length > 0 ) {
+				block.data.content.forEach( row => {
+					html += '<tr>';
+					row.forEach( cell => {
+						html += `<td style="padding: 5px; border: 1px solid #444;">${ cell }</td>`;
+					} );
+					html += '</tr>';
+				} );
+			}
+			html += '</table>';
+			break;
+		case 'image':
+			html += `<div style="margin: 10px 0;"><img src="${ block.data.url }" style="max-width: 100%;"></div>`;
+			if ( block.data.caption ) {
+				html += `<p style="font-style: italic; color: #888;">${ block.data.caption }</p>`;
+			}
+			break;
+		}
+	} );
+	return html;
 }
 // #endregion Other functions
 

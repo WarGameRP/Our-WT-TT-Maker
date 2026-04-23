@@ -2,34 +2,46 @@
   "credits": {
     "types": [
       {
-        "id": "modeler",
-        "name": "Modeler",
-        "icon": "🎨",
-        "color": "#f0ad4e"
+        "id": "infanterie",
+        "name": "Crédits Infanterie",
+        "icon": "🪖",
+        "color": "#FFFFFF"
       },
       {
-        "id": "historian",
-        "name": "Historian",
-        "icon": "📚",
-        "color": "#4dabf7"
+        "id": "blindes",
+        "name": "Crédits Blindés",
+        "icon": "🛡️",
+        "color": "#D11B1B"
       },
       {
-        "id": "researcher",
-        "name": "Researcher",
-        "icon": "🔍",
-        "color": "#51cf66"
+        "id": "mecanises",
+        "name": "Crédits Mécanisés",
+        "icon": "🚛",
+        "color": "#B06EFF"
       },
       {
-        "id": "contributor",
-        "name": "Contributor",
-        "icon": "⭐",
-        "color": "#ff6b6b"
+        "id": "motorises",
+        "name": "Crédits Motorisés",
+        "icon": "🚗",
+        "color": "#A1A1A1"
       },
       {
-        "id": "tester",
-        "name": "Tester",
-        "icon": "🧪",
-        "color": "#a9e34b"
+        "id": "support",
+        "name": "Crédits Support",
+        "icon": "🚑",
+        "color": "#70CC41"
+      },
+      {
+        "id": "aeriens",
+        "name": "Crédits Aériens",
+        "icon": "✈️",
+        "color": "#A6DEFF"
+      },
+      {
+        "id": "invitation",
+        "name": "Crédits d'Invitations",
+        "icon": "✉️",
+        "color": "#FF8F00"
       }
     ],
     "settings": {
@@ -43,14 +55,19 @@
       {
         "id": "year",
         "label": "Year",
-        "type": "text", 
+        "type": "text",
         "placeholder": "XXXX"
       },
       {
         "id": "dev_stage",
         "label": "Development Stage",
         "type": "select",
-        "options": ["Prototype", "Pre-production", "Production", "Modified"]
+        "options": [
+          "Prototype",
+          "Pre-production",
+          "Production",
+          "Modified"
+        ]
       },
       {
         "id": "primary_weapon",

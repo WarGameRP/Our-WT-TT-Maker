@@ -11,13 +11,18 @@ class CreditTool {
     this.config = config || {};
     this.api = api;
     
-    this.creditTypes = [
-      { id: 'modeler', name: 'Modeler', icon: '🎨', color: '#f0ad4e' },
-      { id: 'historian', name: 'Historian', icon: '📚', color: '#4dabf7' },
-      { id: 'researcher', name: 'Researcher', icon: '🔍', color: '#51cf66' },
-      { id: 'contributor', name: 'Contributor', icon: '⭐', color: '#ff6b6b' },
-      { id: 'tester', name: 'Tester', icon: '🧪', color: '#a9e34b' }
-    ];
+    // Use global creditTypes if available (from config.json)
+    this.creditTypes = window.creditTypes && window.creditTypes.length > 0 
+      ? window.creditTypes 
+      : [
+        { id: 'infanterie', name: 'Crédits Infanterie', icon: '🪖', color: '#FFFFFF' },
+        { id: 'blindes', name: 'Crédits Blindés', icon: '🛡️', color: '#D11B1B' },
+        { id: 'mecanises', name: 'Crédits Mécanisés', icon: '🚛', color: '#B06EFF' },
+        { id: 'motorises', name: 'Crédits Motorisés', icon: '🚗', color: '#A1A1A1' },
+        { id: 'support', name: 'Crédits Support', icon: '🚑', color: '#70CC41' },
+        { id: 'aeriens', name: 'Crédits Aériens', icon: '✈️', color: '#A6DEFF' },
+        { id: 'invitation', name: 'Crédits d\'Invitations', icon: '✉️', color: '#FF8F00' }
+      ];
     
     this.wrapper = undefined;
   }
@@ -37,7 +42,7 @@ class CreditTool {
     this.creditTypes.forEach(type => {
       const option = document.createElement('option');
       option.value = type.id;
-      option.textContent = `${type.icon} ${type.name}`;
+      option.textContent = type.icon ? `${type.icon} ${type.name}` : type.name;
       if (this.data.type === type.id) option.selected = true;
       typeSelect.appendChild(option);
     });

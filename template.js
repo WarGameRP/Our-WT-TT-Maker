@@ -13,53 +13,45 @@ function createHtmlContent ( data ) {
         <meta name="generator" content="https://github.com/przemyslaw-zan/WT-Tech-Tree-Maker" />
         <link rel="icon" href="https://warthunder.com/i/favicons/mstile-144x144.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <link rel="stylesheet" href="css/deck_style.css">
+        <link rel="stylesheet" href="Other/css/deck_style.css">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     </head>
     <body>
     <header>
         <div class="header-title">
-            <img src="https://warthunder.com/i/favicons/mstile-144x144.png" alt="Logo">
-            <h1>${ data.title }</h1>
+            <img src="Other/img/Logo_Ranked.png" alt="Logo">
+            <h1>Deck : ${ data.title }</h1>
         </div>
+        <a href="../index.html" class="back-btn">&#8592; Retour au Portail</a>
     </header>
 
     <div style="max-width: 1000px; margin: auto; padding: 20px 3px 0 3px">
-        <p style="color: var(--text-muted); text-align: center;">${ data.description }</p>
+        <div style="color: var(--text-muted); text-align: center;">${ data.description }</div>
     </div>
         <div id="techTreeWrapper">
             <div id="techTree">${ data.tree }</div>
         </div>
         <footer>
             <div>
-                <a href="https://github.com/przemyslaw-zan/WT-Tech-Tree-Maker" target="_blank">
+                <a href="https://github.com/WarGameRP/Our-WT-TT-Maker" target="_blank">
                     <b>Github</b>
                     <img src="https://raw.githubusercontent.com/przemyslaw-zan/WT-Tech-Tree-Maker/main/images/github.png">
                 </a>
-                <i>See source code</i>
+                <i>Source code</i>
             </div>
             <div>
-                <a href="https://www.reddit.com/user/zanju13" target="_blank">
-                    <b>Reddit</b>
-                    <img src="https://raw.githubusercontent.com/przemyslaw-zan/WT-Tech-Tree-Maker/main/images/reddit.png">
+                <a href="https://discord.gg/75jgnDXtUZ" target="_blank">
+                    <b>Discord</b>
+                    <img src="https://www.svgrepo.com/show/353655/discord-icon.svg">
                 </a>
-                <i>Contact tool developer</i>
+                <i>Join our community</i>
             </div>
             <div>
-                <a href="https://przemyslaw-zan.github.io/WT-Tech-Tree-Maker/" target="_blank">
-                    <b>Tool</b>
-                    <img src="https://raw.githubusercontent.com/przemyslaw-zan/WT-Tech-Tree-Maker/main/images/plus.png">
-                    <!-- https://icons-for-free.com/create+new+plus+icon-1320183419213083922/ -->
+                <a href="https://github.com/przemyslaw-zan/WT-Tech-Tree-Maker" target="_blank">
+                    <b>Original Fork</b>
+                    <img src="https://raw.githubusercontent.com/przemyslaw-zan/WT-Tech-Tree-Maker/main/images/github.png">
                 </a>
-                <i>Create your own tree</i>
-            </div>
-            <div>
-                <a href="https://zanju.neocities.org/" target="_blank">
-                    <b>Examples</b>
-                    <img src="https://raw.githubusercontent.com/przemyslaw-zan/WT-Tech-Tree-Maker/main/images/ribbon.png">
-                    <!-- https://icons-for-free.com/ribbon+icon-1320087269980093187/ -->
-                </a>
-                <i>See works of others</i>
+                <i>Original tool</i>
             </div>
         </footer>
         <div id="vehicleDisplayModal" class="modal">
@@ -75,7 +67,9 @@ function createHtmlContent ( data ) {
             </div>
         </div>
     </body>
-    <style>${ data.styles }</style>
+    <style>
+        ${ data.styles }
+    </style>
     <script
         src="https://code.jquery.com/jquery-3.5.1.js"
         integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
@@ -139,7 +133,8 @@ function createHtmlContent ( data ) {
                 tag.style.background = credit.color + '20';
                 tag.style.border = '1px solid ' + credit.color;
                 tag.style.color = credit.color;
-                tag.innerHTML = credit.icon + ' ' + credit.value + ' (' + credit.typeName + ')';
+                const iconText = credit.icon ? credit.icon + ' ' : '';
+                tag.innerHTML = iconText + credit.value + ' (' + credit.typeName + ')';
                 creditsDiv.appendChild( tag );
             } );
 

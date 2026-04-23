@@ -112,15 +112,7 @@ blockquote {
 
 #addButton,
 #editButton {
-	display: block;
-	margin: auto;
-	margin-top: 15px;
-	font-size: 1.3rem;
-	background-color: rgb(78, 156, 0);
-	color: white;
-	border-radius: 3px;
-	border: 1px solid black;
-	cursor: pointer;
+	display: none;
 }
 
 #modalDesc h1,
@@ -246,7 +238,7 @@ body {
 	display: block;
 	margin: auto;
 	text-align: center;
-	height: 2rem;
+	height: auto;
 	font-size: 2rem;
 	max-width: 95vw;
 }
@@ -272,6 +264,30 @@ body {
 	font-size: 1rem;
 	line-height: 1.5;
 	min-height: 300px;
+}
+
+.tech-tree-main-description {
+	color: var(--text_muted);
+	text-align: center;
+	margin-bottom: 20px;
+	line-height: 1.6;
+}
+
+.tech-tree-main-description h1,
+.tech-tree-main-description h2,
+.tech-tree-main-description h3 {
+	color: var(--accent_color);
+	margin-top: 15px;
+}
+
+.tech-tree-main-description p {
+	margin: 10px 0;
+}
+
+.tech-tree-main-description ul,
+.tech-tree-main-description ol {
+	display: inline-block;
+	text-align: left;
 }
 
 /* Editor.js styling */
@@ -521,26 +537,7 @@ a {
 	cursor: pointer;
 }
 
-nav {
-	position: fixed;
-	left: 0;
-	top: 0;
-	z-index: 3;
-}
-
-nav div {
-	background-color: rgb(5, 35, 36);
-	padding: 3px;
-	border-radius: 0 5px 5px 0;
-	border: 1px solid black;
-	border-left: none;
-	cursor: pointer;
-	text-align: center;
-}
-
-nav div:nth-child(odd) {
-	background-color: rgb(38, 74, 75);
-}
+/* Nav handled by modern updates */
 
 .lineDiv {
 	width: 20px;
@@ -701,12 +698,14 @@ nav div:nth-child(odd) {
 /* Modal Content/Box */
 .modal-content {
 	background-color: rgb(46, 66, 80);
-	margin: 15% auto;
-	/* 15% from the top and centered */
+	margin: 5% auto;
+	/* 5% from the top and centered */
 	padding: 20px;
 	width: 100%;
 	/* Could be more or less, depending on screen size */
 	max-width: 750px;
+	max-height: 90vh;
+	overflow-y: auto;
 }
 
 .modal-gallery {
