@@ -115,6 +115,13 @@ blockquote {
 	display: none;
 }
 
+#vehicleDisplayModal {
+	z-index: 5;
+}
+#vehicleDisplayModal .modal-content {
+	max-width: 900px;
+}
+
 #modalDesc h1,
 #modalDesc h2,
 #modalDesc h3 {
@@ -131,6 +138,8 @@ blockquote {
 	padding: 15px;
 	background-color: rgba(22, 27, 34, 0.8);
 	border-radius: 8px;
+	position: relative;
+	z-index: 1;
 }
 
 .flexWrapper {
@@ -584,9 +593,6 @@ a {
 #vehicleImageList td,
 #vehicleImageListEdit td {
 	border: none;
-	-webkit-transform: translateY(10px);
-	-ms-transform: translateY(10px);
-	transform: translateY(10px);
 }
 
 #vehicleImageList input,

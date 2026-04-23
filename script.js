@@ -379,14 +379,45 @@ $( '#editionSelect' ).on( 'change', ( e ) => {
 	document.querySelector( '#vehicleConnectionEdit' ).value = vehicle.connection;
 	document.querySelector( '#vehicleBranchEdit' ).value = vehicle.branch;
 	document.querySelector( '#vehicleFollowEdit' ).value = vehicle.follow;
-	if ( vehicle.description && typeof vehicle.description === 'object' && vehicle.description.blocks ) {
-		if (window.vehicleDescriptionEditEditor) {
-			try {
-				window.vehicleDescriptionEditEditor.render( vehicle.description ).catch(e => console.error('Editor render error:', e));
-			} catch(err) {
-				console.error('Editor render error:', err);
-			}
+	// Use a helper to prevent multiple simultaneous renders
+	const renderEditor = async ( data ) => {
+		if ( !window.vehicleDescriptionEditEditor || !window.vehicleDescriptionEditEditor.render ) return;
+		try {
+			await window.vehicleDescriptionEditEditor.isReady;
+			await window.vehicleDescriptionEditEditor.render( data );
+		} catch ( e ) {
+			console.error( 'Editor render error:', e );
 		}
+	};
+
+	if ( vehicle.description ) {
+		if ( typeof vehicle.description === 'object' && vehicle.description.blocks && vehicle.description.blocks.length > 0 ) {
+			renderEditor( vehicle.description );
+		} else if ( typeof vehicle.description === 'string' && vehicle.description.trim() !== '' ) {
+			// Convert string description to a single paragraph block for Editor.js
+			renderEditor( {
+				blocks: [ {
+					type: 'paragraph',
+					data: { text: vehicle.description }
+				} ]
+			} );
+		} else {
+			// Default empty block instead of empty array
+			renderEditor( {
+				blocks: [ {
+					type: 'paragraph',
+					data: { text: '' }
+				} ]
+			} );
+		}
+	} else {
+		// Default empty block instead of empty array
+		renderEditor( {
+			blocks: [ {
+				type: 'paragraph',
+				data: { text: '' }
+			} ]
+		} );
 	}
 	if ( vehicle.classIcon ) {
 		document.querySelector( `#${ vehicle.classIcon }Edit` ).click();
@@ -455,8 +486,15 @@ document.querySelector( '#deleteAllButton' ).addEventListener( 'click', () => {
 		branchTitles = {};
 		vehicleList.splice( 0, vehicleList.length );
 		document.querySelector( '#techTreeName' ).value = '';
-		if (window.techTreeMainDescEditor) {
-			window.techTreeMainDescEditor.render({ blocks: [] }).catch(e => console.error('Editor clear render error:', e));
+		if ( window.techTreeMainDescEditor && window.techTreeMainDescEditor.render ) {
+			window.techTreeMainDescEditor.isReady.then( () => {
+				window.techTreeMainDescEditor.render( {
+					blocks: [ {
+						type: 'paragraph',
+						data: { text: '' }
+					} ]
+				} ).catch( e => console.error( 'Editor clear error:', e ) );
+			} );
 		}
 		localStorage.clear();
 
@@ -1021,7 +1059,13 @@ function drawTree ( organizedVehicles ) {
 				techTreeDiv.appendChild( descDiv );
 			}
 		} catch ( e ) {
-			console.error( 'Error rendering tech tree description:', e );
+			// If not JSON, it's likely an old plain text description
+			if ( techTreeDescription.trim() !== '' ) {
+				const descDiv = document.createElement( 'div' );
+				descDiv.className = 'tech-tree-main-description';
+				descDiv.innerHTML = `<p>${ techTreeDescription }</p>`;
+				techTreeDiv.appendChild( descDiv );
+			}
 		}
 	}
 
@@ -1475,8 +1519,15 @@ async function readVehicleInput () {
 	document.querySelector( '#none' ).checked = true;
 	tempCredits = [];
 	renderCreditsList( false );
-	if (window.vehicleDescriptionEditor) {
-		window.vehicleDescriptionEditor.render({ blocks: [] }).catch(e => console.error('Editor clear render error:', e));
+	if ( window.vehicleDescriptionEditor && window.vehicleDescriptionEditor.render ) {
+		window.vehicleDescriptionEditor.isReady.then( () => {
+			window.vehicleDescriptionEditor.render( {
+				blocks: [ {
+					type: 'paragraph',
+					data: { text: '' }
+				} ]
+			} ).catch( e => console.error( 'Editor clear error:', e ) );
+		} );
 	}
 	closeModal();
 	return true;
@@ -1510,8 +1561,15 @@ async function readVehicleEditInput () {
 	}
 	const follow = document.querySelector( '#vehicleFollowEdit' ).value;
 	const outputData = await window.vehicleDescriptionEditEditor.save(); const description = outputData;
-	if (window.vehicleDescriptionEditEditor) {
-		window.vehicleDescriptionEditEditor.render({ blocks: [] }).catch(e => console.error('Editor clear render error:', e));
+	if ( window.vehicleDescriptionEditEditor && window.vehicleDescriptionEditEditor.render ) {
+		window.vehicleDescriptionEditEditor.isReady.then( () => {
+			window.vehicleDescriptionEditEditor.render( {
+				blocks: [ {
+					type: 'paragraph',
+					data: { text: '' }
+				} ]
+			} ).catch( e => console.error( 'Editor clear error:', e ) );
+		} );
 	}
 	const id = document.querySelector( '#editionSelect' ).value;
 	const thumbnail = document.querySelector( '#vehicleThumbnailEdit' ).value;
@@ -1734,18 +1792,47 @@ function createImageListItem ( url, description ) {
 // #endregion Miscellaneous menu functions
 
 // #region Other functions
-function closeModal () {
-	document.querySelector( 'body' ).style.overflow = 'visible';
-	document.querySelectorAll( '.modal' ).forEach( ( modal ) => {
-		modal.style.display = 'none';
-	} );
-
-	const galleria = $( '.galleria' ).data( 'galleria' );
-	if ( galleria ) {
-		galleria.splice( 0, galleria.getDataLength() );
-		galleria.destroy();
+function closeModal ( e ) {
+	// If e is provided and it's a click event, check if it's the backdrop or close button
+	if ( e && e.target ) {
+		const isBackdrop = e.target.classList.contains( 'modal' );
+		const isCloseBtn = e.target.classList.contains( 'close' );
+		if ( !isBackdrop && !isCloseBtn ) return;
+		
+		// If it's a backdrop click, only close the specific modal clicked
+		if ( isBackdrop ) {
+			e.target.style.display = 'none';
+		} else {
+			// If it's a close button, find the parent modal
+			let parent = e.target.parentNode;
+			while ( parent && !parent.classList.contains( 'modal' ) ) {
+				parent = parent.parentNode;
+			}
+			if ( parent ) parent.style.display = 'none';
+		}
+	} else {
+		// Fallback: hide all modals if called without event
+		document.querySelectorAll( '.modal' ).forEach( ( modal ) => {
+			modal.style.display = 'none';
+		} );
 	}
-	Galleria.run( '.galleria' );
+
+	// Only reset overflow if no more modals are visible
+	const visibleModals = [ ...document.querySelectorAll( '.modal' ) ].filter( m => m.style.display === 'block' );
+	if ( visibleModals.length === 0 ) {
+		document.querySelector( 'body' ).style.overflow = 'visible';
+	}
+
+	// Galleria cleanup - only if galleria modal is not visible
+	const displayModal = document.querySelector( '#vehicleDisplayModal' );
+	if ( !displayModal || displayModal.style.display !== 'block' ) {
+		const galleria = $( '.galleria' ).data( 'galleria' );
+		if ( galleria ) {
+			galleria.splice( 0, galleria.getDataLength() );
+			galleria.destroy();
+		}
+		Galleria.run( '.galleria' );
+	}
 }
 function fillClassSelection ( edit ) {
 	const targetHtml = document.querySelector( edit ? '#vehicleClassIconsEdit' : '#vehicleClassIcons' );
@@ -2029,13 +2116,23 @@ async function init () {
 	}
 
 	// Prepare tech tree description data
-	let initialTechTreeDescription = { blocks: [] };
+	let initialTechTreeDescription = { blocks: [ { type: 'paragraph', data: { text: '' } } ] };
 	const techTreeDescriptionSave = localStorage.getItem( 'description' );
 	if ( techTreeDescriptionSave ) {
 		try {
 			initialTechTreeDescription = JSON.parse( techTreeDescriptionSave );
+			// Ensure it has at least one block for Editor.js stability
+			if ( !initialTechTreeDescription.blocks || initialTechTreeDescription.blocks.length === 0 ) {
+				initialTechTreeDescription.blocks = [ { type: 'paragraph', data: { text: '' } } ];
+			}
 		} catch ( e ) {
-			console.error( 'Error parsing tech tree description:', e );
+			// If not JSON, it's likely an old plain text description
+			initialTechTreeDescription = {
+				blocks: [ {
+					type: 'paragraph',
+					data: { text: techTreeDescriptionSave }
+				} ]
+			};
 		}
 	}
 
