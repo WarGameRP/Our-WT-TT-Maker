@@ -129,6 +129,18 @@ blockquote {
 	font-weight: normal;
 }
 
+.modal-gallery {
+	display: flex;
+	flex-direction: column;
+}
+
+.modal-gallery .modal-body {
+	margin-top: 20px;
+	padding: 15px;
+	background-color: rgba(22, 27, 34, 0.8);
+	border-radius: 8px;
+}
+
 .flexWrapper {
 	width: 50%;
 	float: left;
@@ -243,6 +255,129 @@ body {
 #techTreeMainDescLabel {
 	display: block;
 	text-align: center;
+}
+
+#techTreeMainDesc,
+#vehicleDescription,
+#vehicleDescriptionEdit {
+	width: 95%;
+	max-width: 1000px;
+	margin: 10px auto;
+	display: block;
+	padding: 15px;
+	border: 2px solid var(--accent_color);
+	border-radius: 8px;
+	background-color: rgba(22, 27, 34, 0.8);
+	color: #c9d1d9;
+	font-size: 1rem;
+	line-height: 1.5;
+	min-height: 300px;
+}
+
+/* Editor.js styling */
+.codex-editor__redactor {
+	padding: 15px !important;
+	background-color: rgba(22, 27, 34, 0.8) !important;
+}
+
+.ce-block__content {
+	color: #c9d1d9 !important;
+}
+
+.ce-toolbar__content {
+	background-color: #1c2128 !important;
+	border: 2px solid var(--accent_color) !important;
+	border-radius: 4px;
+}
+
+.ce-toolbar__plus {
+	background-color: var(--accent_color) !important;
+	color: #c9d1d9 !important;
+	border-radius: 3px;
+	padding: 8px !important;
+	font-weight: bold;
+}
+
+.ce-toolbar__plus:hover {
+	background-color: #4a90e2 !important;
+}
+
+.ce-toolbar__settings-btn {
+	background-color: var(--accent_color) !important;
+	color: #c9d1d9 !important;
+	border-radius: 3px;
+}
+
+.ce-popover {
+	background-color: #1c2128 !important;
+	border: 2px solid var(--accent_color) !important;
+	border-radius: 4px;
+}
+
+.ce-popover-item {
+	padding: 10px 15px !important;
+}
+
+.ce-popover-item:hover {
+	background-color: rgba(22, 27, 34, 0.8) !important;
+}
+
+.ce-popover-item__title {
+	color: #c9d1d9 !important;
+	font-weight: bold;
+}
+
+.ce-popover-item__icon {
+	color: var(--accent_color) !important;
+}
+
+/* Credit tool styling */
+.credit-wrapper {
+	display: flex;
+	gap: 10px;
+	padding: 10px;
+	background-color: rgba(22, 27, 34, 0.5);
+	border-radius: 5px;
+	margin: 5px 0;
+	flex-wrap: wrap;
+}
+
+.credit-text-input,
+.credit-type-select,
+.credit-value-input {
+	background-color: #1c2128;
+	color: #c9d1d9;
+	border: 1px solid var(--accent_color);
+	border-radius: 4px;
+	padding: 5px;
+}
+
+.credit-text-input {
+	flex: 2;
+	min-width: 150px;
+}
+
+.credit-type-select {
+	flex: 1;
+	min-width: 120px;
+}
+
+.credit-value-input {
+	width: 100px;
+}
+
+.add-credit-input button {
+	background-color: rgb(78, 156, 0);
+	color: white;
+	border: none;
+	padding: 5px 10px;
+	border-radius: 3px;
+	cursor: pointer;
+	font-weight: bold;
+}
+
+.add-credit-input button:hover {
+	background-color: rgb(60, 120, 0);
 }
 
 #deleteAllButton {

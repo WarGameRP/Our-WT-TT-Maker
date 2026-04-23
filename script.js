@@ -313,8 +313,8 @@ document.querySelector( '#navAdd' ).addEventListener( 'click', () => {
 	}
 } );
 
-document.querySelector( '#addButton' ).addEventListener( 'click', () => {
-	const readSuccessful = readVehicleInput();
+document.querySelector( '#addButton' ).addEventListener( 'click', async () => {
+	const readSuccessful = await readVehicleInput();
 	if ( readSuccessful ) {
 		localStorage.setItem( 'save', JSON.stringify( vehicleList ) );
 		fillEditSelection( vehicleList );
@@ -350,8 +350,8 @@ document.querySelector( '#navEdit' ).addEventListener( 'click', () => {
 	}
 } );
 
-document.querySelector( '#editButton' ).addEventListener( 'click', () => {
-	const readSuccessful = readVehicleEditInput();
+document.querySelector( '#editButton' ).addEventListener( 'click', async () => {
+	const readSuccessful = await readVehicleEditInput();
 	if ( readSuccessful ) {
 		localStorage.setItem( 'save', JSON.stringify( vehicleList ) );
 		fillEditSelection( vehicleList );
@@ -375,14 +375,13 @@ $( '#editionSelect' ).on( 'change', ( e ) => {
 	document.querySelector( '#vehicleConnectionEdit' ).value = vehicle.connection;
 	document.querySelector( '#vehicleBranchEdit' ).value = vehicle.branch;
 	document.querySelector( '#vehicleFollowEdit' ).value = vehicle.follow;
-	CKEDITOR.instances.vehicleDescriptionEdit.setData( vehicle.description );
-	document.querySelector( '#vehicleThumbnailEdit' ).value = vehicle.thumbnail;
-	if ( vehicle.images ) {
-		const list = document.querySelector( '#vehicleImageListEdit' );
-		for ( const image of vehicle.images ) {
-			const url = image.image ? image.image : '';
-			const desc = image.description ? image.description : '';
-			list.appendChild( createImageListItem( url, desc ) );
+	if ( vehicle.description && typeof vehicle.description === 'object' && vehicle.description.blocks ) {
+		if (window.vehicleDescriptionEditEditor) {
+			try {
+				window.vehicleDescriptionEditEditor.render( vehicle.description ).catch(e => console.error('Editor render error:', e));
+			} catch(err) {
+				console.error('Editor render error:', err);
+			}
 		}
 	}
 	if ( vehicle.classIcon ) {
@@ -452,7 +451,9 @@ document.querySelector( '#deleteAllButton' ).addEventListener( 'click', () => {
 		branchTitles = {};
 		vehicleList.splice( 0, vehicleList.length );
 		document.querySelector( '#techTreeName' ).value = '';
-		CKEDITOR.instances.techTreeMainDesc.setData( '' );
+		if (window.techTreeMainDescEditor) {
+			window.techTreeMainDescEditor.render({ blocks: [] }).catch(e => console.error('Editor clear render error:', e));
+		}
 		localStorage.clear();
 
 		const organizedVehicles = organizeTree( vehicleList );
@@ -479,9 +480,10 @@ document.querySelector( '#vehicleOrderList' ).addEventListener( 'click', ( e ) =
 // #endregion Order modal listeners
 
 // #region Backup modal listeners
-document.querySelector( '#backupDownload' ).addEventListener( 'click', () => {
+document.querySelector( '#backupDownload' ).addEventListener( 'click', async () => {
 	const title = document.querySelector( '#techTreeName' ).value;
-	const description = CKEDITOR.instances.techTreeMainDesc.getData();
+	const outputData = await window.techTreeMainDescEditor.save();
+	const description = outputData;
 	const content = { title, description, vehicleList, branchTitles, settings };
 	const fileName = title.toLowerCase().trim()
 		.replaceAll( ' ', '_' ) + '_backup.json';
@@ -542,7 +544,11 @@ document.querySelector( '#loadBackup' ).addEventListener( 'click', () => {
 				localStorage.setItem( 'settings', JSON.stringify( settings ) );
 
 				document.querySelector( '#techTreeName' ).value = loadedData.title;
-				CKEDITOR.instances.techTreeMainDesc.setData( loadedData.description );
+				if ( loadedData.description && typeof loadedData.description === 'object' ) {
+					if (window.techTreeMainDescEditor && window.techTreeMainDescEditor.render) {
+						window.techTreeMainDescEditor.render( loadedData.description );
+					}
+				}
 				vehicleList.splice( 0, vehicleList.length );
 				loadedData.vehicleList.forEach( ( element ) => {
 					vehicleList.push( element );
@@ -565,7 +571,7 @@ document.querySelector( '#loadBackup' ).addEventListener( 'click', () => {
 // #endregion Backup modal listeners
 
 // #region Export modal listeners
-document.querySelector( '#exportTechTreeButton' ).addEventListener( 'click', () => {
+document.querySelector( '#exportTechTreeButton' ).addEventListener( 'click', async () => {
 	// Exported tree should not be in screenshot mode.
 	if ( settings.screenshotMode ) {
 		settings.screenshotMode = false;
@@ -575,7 +581,8 @@ document.querySelector( '#exportTechTreeButton' ).addEventListener( 'click', () 
 
 	// Collecting data
 	const title = document.querySelector( '#techTreeName' ).value;
-	const description = CKEDITOR.instances.techTreeMainDesc.getData();
+	const outputData = await window.techTreeMainDescEditor.save();
+	const description = outputData;
 	consumeBranchHeaders();
 	const tree = document.querySelector( '#techTree' ).innerHTML;
 	const vehicles = JSON.stringify( vehicleList );
@@ -810,7 +817,49 @@ function techTreeClickProcessor ( e ) {
 			$( '.galleria' )
 				.data( 'galleria' )
 				.load( [ ...vehicle.images ] );
-		document.querySelector( '#modalDesc' ).innerHTML = vehicle.description;
+		// Convert Editor.js JSON to HTML for display
+		if ( vehicle.description && typeof vehicle.description === 'object' && vehicle.description.blocks ) {
+			let html = '';
+			vehicle.description.blocks.forEach( block => {
+				if ( block.type === 'header' ) {
+					const level = block.data.level || 1;
+					html += `<h${level}>${block.data.text}</h${level}>`;
+				} else if ( block.type === 'paragraph' ) {
+					html += `<p>${block.data.text || ''}</p>`;
+				} else if ( block.type === 'list' ) {
+					const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+					html += `<${tag}>`;
+					block.data.items.forEach( item => {
+						html += `<li>${item}</li>`;
+					} );
+					html += `</${tag}>`;
+				} else if ( block.type === 'credit' ) {
+					html += `<div class="vehicle-credit" style="color: ${block.data.color}; margin: 5px 0; padding: 8px; background-color: rgba(22, 27, 34, 0.5); border-radius: 4px; border-left: 3px solid ${block.data.color};">${block.data.icon} ${block.data.text || ''} <strong>${block.data.typeName}</strong>: ${block.data.value}</div>`;
+				} else if ( block.type === 'table' ) {
+					html += `<table border="1" style="border-collapse: collapse; width: 100%; margin: 10px 0;">`;
+					if ( block.data.content && block.data.content.length > 0 ) {
+						block.data.content.forEach( row => {
+							html += '<tr>';
+							row.forEach( cell => {
+								html += `<td style="padding: 5px; border: 1px solid #444;">${cell}</td>`;
+							} );
+							html += '</tr>';
+						} );
+					}
+					html += '</table>';
+				} else if ( block.type === 'image' ) {
+					html += `<div style="margin: 10px 0;"><img src="${block.data.url}" style="max-width: 100%;"></div>`;
+					if ( block.data.caption ) {
+						html += `<p style="font-style: italic; color: #888;">${block.data.caption}</p>`;
+					}
+				}
+			} );
+			document.querySelector( '#modalDesc' ).innerHTML = html;
+		} else if ( typeof vehicle.description === 'string' ) {
+			document.querySelector( '#modalDesc' ).innerHTML = vehicle.description;
+		} else {
+			document.querySelector( '#modalDesc' ).innerHTML = '<p>No description available.</p>';
+		}
 		// Add credits display
 		if ( vehicle.credits && vehicle.credits.length > 0 ) {
 			renderCreditsForDisplay( vehicle.credits, document.querySelector( '#modalDesc' ) );
@@ -839,32 +888,6 @@ document.querySelector( '#techTree' ).addEventListener( 'input', ( e ) => {
 document.querySelector( '#techTreeName' ).addEventListener( 'change', ( e ) => {
 	localStorage.setItem( 'title', e.target.value );
 } );
-CKEDITOR.instances.techTreeMainDesc.on( 'change', () => {
-	localStorage.setItem( 'description', CKEDITOR.instances.techTreeMainDesc.getData() );
-} );
-CKEDITOR.on( 'dialogDefinition', function ( ev ) {
-	const dialogName = ev.data.name;
-	const dialogDefinition = ev.data.definition;
-	if ( dialogName == 'link' ) {
-		const infoTab = dialogDefinition.getContents( 'info' );
-		const protocolField = infoTab.get( 'protocol' );
-		protocolField[ 'default' ] = 'https://';
-
-		const targetTab = dialogDefinition.getContents( 'target' );
-		const targetField = targetTab.get( 'linkTargetType' );
-		targetField[ 'default' ] = '_blank';
-	}
-} );
-CKEDITOR.on( 'instanceReady', function ( e ) {
-	// First time
-	e.editor.document.getBody().setStyle( 'background-color', 'rgb(36, 46, 51)' );
-	e.editor.document.getBody().setStyle( 'color', 'white' );
-	// in case the user switches to source and back
-	e.editor.on( 'contentDom', function () {
-		e.editor.document.getBody().setStyle( 'background-color', 'rgb(36, 46, 51)' );
-		e.editor.document.getBody().setStyle( 'color', 'white' );
-	} );
-} );
 // #endregion Main title & description listeners
 
 // #region Miscellaneous listeners
@@ -883,7 +906,12 @@ function organizeTree ( vehicleList ) {
 		if ( sortedVehicles[ vehicleRegion ] === undefined ) sortedVehicles[ vehicleRegion ] = [];
 		sortedVehicles[ vehicleRegion ].push( vehicle );
 	}
-	for ( const region in sortedVehicles ) {
+	const sortedRegions = Object.keys( sortedVehicles ).sort( ( a, b ) => {
+		const aBranch = parseInt( a.match( /branch_(\d+)/ )?.[ 1 ] || 0 );
+		const bBranch = parseInt( b.match( /branch_(\d+)/ )?.[ 1 ] || 0 );
+		return aBranch - bBranch;
+	} );
+	for ( const region of sortedRegions ) {
 		let array = sortedVehicles[ region ];
 		array.sort( ( a, b ) => a.br - b.br );
 		const followers = array.filter( ( item ) => {
@@ -1336,9 +1364,16 @@ function createFolder ( folder ) {
 }
 function isClickable ( vehicle ) {
 	const images = vehicle.images?.length > 0;
-	const description = vehicle.description?.length > 0 && vehicle.description !== descriptionTemplate;
+	let hasDescription = false;
+	if ( vehicle.description ) {
+		if ( typeof vehicle.description === 'object' && vehicle.description.blocks ) {
+			hasDescription = vehicle.description.blocks.length > 0;
+		} else if ( typeof vehicle.description === 'string' ) {
+			hasDescription = vehicle.description.length > 0 && vehicle.description !== '';
+		}
+	}
 	const hasCredits = vehicle.credits?.length > 0;
-	return description || images || hasCredits;
+	return hasDescription || images || hasCredits;
 }
 function isFolderRoot ( node ) {
 	const initialNode = node;
@@ -1381,7 +1416,7 @@ function createSvg ( icon ) {
 // #endregion Vehicle badge functions
 
 // #region Miscellaneous menu functions
-function readVehicleInput () {
+async function readVehicleInput () {
 	const name = document.querySelector( '#vehicleName' ).value.trim();
 	if ( name.length === 0 ) {
 		window.alert( 'You have to provide name of the vehicle!' );
@@ -1400,16 +1435,17 @@ function readVehicleInput () {
 	const type = document.querySelector( '#vehicleType' ).value;
 	const connection = document.querySelector( '#vehicleConnection' ).value;
 	const branch = Number( document.querySelector( '#vehicleBranch' ).value );
-	if ( !/^[1-9]$/.test( branch.toString() ) ) {
-		window.alert( 'Branch has to be a natural number between 1 and 9!' );
+	if (branch < 1) {
+		window.alert('Branch has to be a natural number greater than 0!');
 		return false;
 	}
-	let classIcon = document.querySelector( 'input[name="classIcons"]:checked' ).value;
+	const classIconInput = document.querySelector( 'input[name="classIcons"]:checked' );
+	let classIcon = classIconInput ? classIconInput.value : 'none';
 	if ( classIcon === 'none' ) {
 		classIcon = undefined;
 	}
-	const follow = document.querySelector( '#vehicleFollowEdit' ).value;
-	const description = CKEDITOR.instances.vehicleDescription.getData();
+	const follow = document.querySelector( '#vehicleFollow' ).value;
+	const outputData = await window.vehicleDescriptionEditor.save(); const description = outputData;
 	const id = 'v' + Date.now();
 	const thumbnail = document.querySelector( '#vehicleThumbnail' ).value;
 	const images = [];
@@ -1444,11 +1480,13 @@ function readVehicleInput () {
 	document.querySelector( '#none' ).checked = true;
 	tempCredits = [];
 	renderCreditsList( false );
-	CKEDITOR.instances.vehicleDescription.setData( descriptionTemplate );
+	if (window.vehicleDescriptionEditor) {
+		window.vehicleDescriptionEditor.render({ blocks: [] }).catch(e => console.error('Editor clear render error:', e));
+	}
 	closeModal();
 	return true;
 }
-function readVehicleEditInput () {
+async function readVehicleEditInput () {
 	const name = document.querySelector( '#vehicleNameEdit' ).value.trim();
 	if ( name.length === 0 ) {
 		window.alert( 'You have to provide name of the vehicle!' );
@@ -1467,8 +1505,8 @@ function readVehicleEditInput () {
 	const type = document.querySelector( '#vehicleTypeEdit' ).value;
 	const connection = document.querySelector( '#vehicleConnectionEdit' ).value;
 	const branch = Number( document.querySelector( '#vehicleBranchEdit' ).value );
-	if ( !/^[1-9]$/.test( branch.toString() ) ) {
-		window.alert( 'Branch has to be a natural number between 1 and 9!' );
+	if (branch < 1) {
+		window.alert('Branch has to be a natural number greater than 0!');
 		return false;
 	}
 	let classIcon = document.querySelector( 'input[name="classIconsEdit"]:checked' ).value;
@@ -1476,8 +1514,10 @@ function readVehicleEditInput () {
 		classIcon = undefined;
 	}
 	const follow = document.querySelector( '#vehicleFollowEdit' ).value;
-	const description = CKEDITOR.instances.vehicleDescriptionEdit.getData();
-	CKEDITOR.instances.vehicleDescriptionEdit.setData( '' );
+	const outputData = await window.vehicleDescriptionEditEditor.save(); const description = outputData;
+	if (window.vehicleDescriptionEditEditor) {
+		window.vehicleDescriptionEditEditor.render({ blocks: [] }).catch(e => console.error('Editor clear render error:', e));
+	}
 	const id = document.querySelector( '#editionSelect' ).value;
 	const thumbnail = document.querySelector( '#vehicleThumbnailEdit' ).value;
 	const images = [];
@@ -1767,7 +1807,11 @@ function createCreditsSection( edit = false ) {
 		btn.classList.add( 'credit-type-btn' );
 		btn.dataset.typeId = type.id;
 		btn.innerHTML = `${ type.icon } ${ type.name }`;
-		btn.addEventListener( 'click', () => selectCreditType( type.id, edit ) );
+		btn.addEventListener( 'click', ( e ) => {
+			e.preventDefault();
+			e.stopPropagation();
+			selectCreditType( type.id, edit );
+		} );
 		typeSelector.appendChild( btn );
 	} );
 	container.appendChild( typeSelector );
@@ -1782,16 +1826,20 @@ function createCreditsSection( edit = false ) {
 	const addInput = document.createElement( 'div' );
 	addInput.classList.add( 'add-credit-input' );
 
-	const nameInput = document.createElement( 'input' );
-	nameInput.type = 'text';
-	nameInput.placeholder = 'Enter name...';
-	nameInput.id = edit ? 'creditNameInputEdit' : 'creditNameInput';
+	const valueInput = document.createElement( 'input' );
+	valueInput.type = 'number';
+	valueInput.placeholder = 'Enter credit value...';
+	valueInput.id = edit ? 'creditValueInputEdit' : 'creditValueInput';
 
 	const addBtn = document.createElement( 'button' );
 	addBtn.innerText = 'Add';
-	addBtn.addEventListener( 'click', () => addCredit( edit ) );
+	addBtn.addEventListener( 'click', ( e ) => {
+		e.preventDefault();
+		e.stopPropagation();
+		addCredit( edit );
+	} );
 
-	addInput.appendChild( nameInput );
+	addInput.appendChild( valueInput );
 	addInput.appendChild( addBtn );
 	container.appendChild( addInput );
 
@@ -1807,17 +1855,17 @@ function selectCreditType( typeId, edit = false ) {
 }
 
 function addCredit( edit = false ) {
-	const input = document.querySelector( edit ? '#creditNameInputEdit' : '#creditNameInput' );
-	const name = input.value.trim();
+	const input = document.querySelector( edit ? '#creditValueInputEdit' : '#creditValueInput' );
+	const value = input.value.trim();
 
-	if ( !name || !currentCreditType ) {
-		alert( 'Please select a credit type and enter a name' );
+	if ( !value || !currentCreditType ) {
+		alert( 'Please select a credit type and enter a value' );
 		return;
 	}
 
 	const creditType = creditTypes.find( t => t.id === currentCreditType );
 	const credit = {
-		name,
+		value: parseFloat( value ),
 		type: currentCreditType,
 		typeName: creditType.name,
 		icon: creditType.icon,
@@ -1854,7 +1902,7 @@ function renderCreditsList( edit = false ) {
 
 		entry.innerHTML = `
 			<span class="credit-icon">${ credit.icon }</span>
-			<span class="credit-name">${ credit.name }</span>
+			<span class="credit-value">${ credit.value }</span>
 			<span class="credit-type">${ credit.typeName }</span>
 			<span class="remove-credit" onclick="removeCredit(${ index }, ${ edit })">❌</span>
 		`;
@@ -1879,7 +1927,7 @@ function renderCreditsForDisplay( credits, container ) {
 		tag.style.background = `${ credit.color }20`;
 		tag.style.border = `1px solid ${ credit.color }`;
 		tag.style.color = credit.color;
-		tag.innerHTML = `${ credit.icon } ${ credit.name } (${ credit.typeName })`;
+		tag.innerHTML = `${ credit.icon } ${ credit.value } (${ credit.typeName })`;
 		creditsDiv.appendChild( tag );
 	} );
 
@@ -1919,12 +1967,90 @@ async function init () {
 	$( '#deleteVehicleSelect' ).select2( { width: '15em' } );
 
 	// Text editor initialization
-	CKEDITOR.config.height = 350;
-	CKEDITOR.replace( 'vehicleDescription' );
-	CKEDITOR.replace( 'vehicleDescriptionEdit' );
-	CKEDITOR.instances.vehicleDescription.setData( descriptionTemplate );
-	CKEDITOR.replace( 'techTreeMainDesc' );
-	CKEDITOR.config.uiColor = '#A4D0E6';
+	const descriptionTemplate = {
+		blocks: [
+			{
+				type: 'header',
+				data: {
+					text: 'Year: XXXX Development stage: X',
+					level: 3
+				}
+			},
+			{
+				type: 'list',
+				data: {
+					style: 'unordered',
+					items: [
+						'Historical description...',
+						'Primary weapon description...',
+						'Secondary weapon description...',
+						'Crew, armor, mobility etc...',
+						'Justification for Battle Rating placement...'
+					]
+				}
+			},
+			{
+				type: 'header',
+				data: {
+					text: 'Links:',
+					level: 3
+				}
+			},
+			{
+				type: 'list',
+				data: {
+					style: 'ordered',
+					items: [
+						'Source 1...',
+						'Source 2...',
+						'WT forum discussion on the vehicle...'
+					]
+				}
+			}
+		]
+	};
+
+	// Initialize Editor.js instances
+	window.vehicleDescriptionEditor = new EditorJS({
+		holder: 'vehicleDescription',
+		tools: {
+			header: window.Header,
+			list: window.List,
+			image: window.SimpleImage,
+			table: window.Table,
+			credit: CreditTool
+		},
+		data: descriptionTemplate,
+		placeholder: 'Let`s write an awesome story!'
+	});
+
+	window.vehicleDescriptionEditEditor = new EditorJS({
+		holder: 'vehicleDescriptionEdit',
+		tools: {
+			header: window.Header,
+			list: window.List,
+			image: window.SimpleImage,
+			table: window.Table,
+			credit: CreditTool
+		},
+		placeholder: 'Let`s write an awesome story!'
+	});
+
+	window.techTreeMainDescEditor = new EditorJS({
+		holder: 'techTreeMainDesc',
+		tools: {
+			header: window.Header,
+			list: window.List,
+			image: window.SimpleImage,
+			table: window.Table,
+			credit: CreditTool
+		},
+		placeholder: 'Here you can write description of your tech tree as a whole.',
+		onChange: async () => {
+			const outputData = await window.techTreeMainDescEditor.save();
+			localStorage.setItem('description', JSON.stringify(outputData));
+		}
+	});
 
 	// Adding class icon selection
 	fillClassSelection( false );
@@ -1943,6 +2069,7 @@ async function init () {
 		} );
 		fillEditSelection( vehicleList );
 		updateVehicleOrderList();
+		drawTree( organizeTree( vehicleList ) );
 	}
 	const techTreeTitle = localStorage.getItem( 'title' );
 	if ( techTreeTitle ) {
@@ -1950,7 +2077,28 @@ async function init () {
 	}
 	const techTreeDescription = localStorage.getItem( 'description' );
 	if ( techTreeDescription ) {
-		CKEDITOR.instances.techTreeMainDesc.setData( techTreeDescription );
+		try {
+			const parsedDesc = JSON.parse(techTreeDescription);
+			setTimeout(() => {
+				try {
+					if (window.techTreeMainDescEditor && window.techTreeMainDescEditor.render && parsedDesc.blocks) {
+						window.techTreeMainDescEditor.render(parsedDesc).catch(e => console.error('Editor render error:', e));
+					}
+				} catch(err) {
+					console.error('Editor initialization error:', err);
+				}
+			}, 300);
+		} catch(e) {
+			setTimeout(() => {
+				try {
+					if (window.techTreeMainDescEditor && window.techTreeMainDescEditor.render) {
+						window.techTreeMainDescEditor.render({ blocks: [] }).catch(e => console.error('Editor render error:', e));
+					}
+				} catch(err) {
+					console.error('Editor initialization error:', err);
+				}
+			}, 300);
+		}
 	}
 	let settingsSave = localStorage.getItem( 'settings' );
 	if ( settingsSave ) {

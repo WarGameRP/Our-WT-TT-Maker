@@ -43,7 +43,7 @@
       {
         "id": "year",
         "label": "Year",
-        "type": "text",
+        "type": "text", 
         "placeholder": "XXXX"
       },
       {

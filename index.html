@@ -30,8 +30,7 @@
 	<label id="techTreeMainDescLabel" for="techTreeMainDesc">
 		<h3>Tech tree description:</h3>
 	</label>
-	<textarea id="techTreeMainDesc"
-		name="techTreeMainDesc">Here you can write description of your tech tree as a whole.</textarea>
+	<div id="techTreeMainDesc" name="techTreeMainDesc"></div>
 	<br /><br />
 	<nav>
 		<div id="navAdd">Add vehicle</div>
@@ -118,12 +117,11 @@
 							</div>
 							<div class="inputModalFlexChild">
 								<label for="vehicleBranch">Branch:</label>
-								<input type="number" name="vehicleBranch" id="vehicleBranch" min="1" max="9" />
+								<input type="number" name="vehicleBranch" id="vehicleBranch" min="1"  />
 								<div class="tooltip">
 									❓
 									<span class="tooltipText">Defines which branch the vehicle belongs to (left to right
-										vertical lines of vehicles). It has to be a whole number between 1
-										and 9.<br /><br />
+										vertical lines of vehicles). It has to be a whole number between 1 and 9.<br /><br />
 										Required.</span>
 								</div>
 							</div>
@@ -180,8 +178,7 @@
 							Optional - although would be nice to have some ;)</span>
 					</div>
 					<br />
-					<textarea name="vehicleDescription" id="vehicleDescription"
-						placeholder="This vehicle is awesome!"></textarea>
+					<div id="vehicleDescription" name="vehicleDescription"></div>
 
 					<!-- Credits Section -->
 					<div id="creditsSectionAdd"></div>
@@ -268,12 +265,11 @@
 							</div>
 							<div class="inputModalFlexChild">
 								<label for="vehicleBranchEdit">Branch:</label>
-								<input type="number" name="vehicleBranchEdit" id="vehicleBranchEdit" min="1" max="9" />
+								<input type="number" name="vehicleBranchEdit" id="vehicleBranchEdit" min="1"  />
 								<div class="tooltip">
 									❓
 									<span class="tooltipText">Defines which branch the vehicle belongs to (left to right
-										vertical lines of vehicles). It has to be a whole number between 1
-										and 9.<br /><br />
+										vertical lines of vehicles). It has to be a whole number between 1 and 9.<br /><br />
 										Required.</span>
 								</div>
 							</div>
@@ -330,8 +326,7 @@
 						<span class="tooltipText">Description of the vehicle <br /><br />
 							Optional - although would be nice to have some ;)</span>
 					</div>
-					<textarea name="vehicleDescriptionEdit" id="vehicleDescriptionEdit" rows="10" cols="50"
-						placeholder="This vehicle is awesome!"></textarea>
+					<div id="vehicleDescriptionEdit" name="vehicleDescriptionEdit"></div>
 
 					<!-- Credits Section -->
 					<div id="creditsSectionEdit"></div>
@@ -585,15 +580,20 @@
 			</div>
 			<div class="modal-gallery">
 				<div class="galleria" id="galleria"></div>
+				<div class="modal-body" id="modalDesc"></div>
 			</div>
-			<div class="modal-body" id="modalDesc"></div>
 		</div>
 	</div>
 	<script src="https://code.jquery.com/jquery-3.5.1.js"
 		integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/galleria/1.6.1/galleria.min.js"></script>
-	<script src="https://cdn.ckeditor.com/4.16.1/standard/ckeditor.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.28.0"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.7.0"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1.8.0"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@editorjs/simple-image@1.4.0"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@editorjs/table@2.2.0"></script>
+	<script src="editorjs-credits-tool.js"></script>
 	<script src="template.js"></script>
 	<script src="script.js"></script>
 </body>

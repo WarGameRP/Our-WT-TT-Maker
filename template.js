@@ -13,10 +13,20 @@ function createHtmlContent ( data ) {
         <meta name="generator" content="https://github.com/przemyslaw-zan/WT-Tech-Tree-Maker" />
         <link rel="icon" href="https://warthunder.com/i/favicons/mstile-144x144.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <link rel="stylesheet" href="css/deck_style.css">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     </head>
     <body>
-        <h1 style="text-align: center; border-bottom: 1px solid black; padding: 5px">${ data.title }</h1>
-        <div style="max-width: 1000px; margin: auto; padding: 0 3px 0 3px">${ data.description }</div>
+    <header>
+        <div class="header-title">
+            <img src="https://warthunder.com/i/favicons/mstile-144x144.png" alt="Logo">
+            <h1>${ data.title }</h1>
+        </div>
+    </header>
+
+    <div style="max-width: 1000px; margin: auto; padding: 20px 3px 0 3px">
+        <p style="color: var(--text-muted); text-align: center;">${ data.description }</p>
+    </div>
         <div id="techTreeWrapper">
             <div id="techTree">${ data.tree }</div>
         </div>
@@ -129,7 +139,7 @@ function createHtmlContent ( data ) {
                 tag.style.background = credit.color + '20';
                 tag.style.border = '1px solid ' + credit.color;
                 tag.style.color = credit.color;
-                tag.innerHTML = credit.icon + ' ' + credit.name + ' (' + credit.typeName + ')';
+                tag.innerHTML = credit.icon + ' ' + credit.value + ' (' + credit.typeName + ')';
                 creditsDiv.appendChild( tag );
             } );
 
