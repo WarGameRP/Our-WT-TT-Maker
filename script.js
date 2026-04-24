@@ -379,6 +379,15 @@ $( '#editionSelect' ).on( 'change', ( e ) => {
 	document.querySelector( '#vehicleConnectionEdit' ).value = vehicle.connection;
 	document.querySelector( '#vehicleBranchEdit' ).value = vehicle.branch;
 	document.querySelector( '#vehicleFollowEdit' ).value = vehicle.follow;
+	document.querySelector( '#vehicleThumbnailEdit' ).value = vehicle.thumbnail || '';
+	if ( vehicle.images ) {
+		const list = document.querySelector( '#vehicleImageListEdit' );
+		for ( const image of vehicle.images ) {
+			const url = image.image ? image.image : '';
+			const desc = image.description ? image.description : '';
+			list.appendChild( createImageListItem( url, desc ) );
+		}
+	}
 	// Use a helper to prevent multiple simultaneous renders
 	const renderEditor = async ( data ) => {
 		if ( !window.vehicleDescriptionEditEditor || !window.vehicleDescriptionEditEditor.render ) return;
