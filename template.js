@@ -1,5 +1,17 @@
 'use strict';
 /* eslint-disable no-unused-vars */
+
+// XSS prevention for exported HTML
+function escapeHtml(str) {
+	if (typeof str !== 'string') return str;
+	return str
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
 function createHtmlContent ( data ) {
 	return `
 <!DOCTYPE html>
@@ -8,7 +20,7 @@ function createHtmlContent ( data ) {
         <meta charset="UTF-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>${ data.title }</title>
+        <title>${ escapeHtml( data.title ) }</title>
         <meta name="description" content="This tech tree was generated using WT-Tech-Tree-Maker." />
         <meta name="generator" content="https://github.com/przemyslaw-zan/WT-Tech-Tree-Maker" />
         <link rel="icon" href="https://warthunder.com/i/favicons/mstile-144x144.png" />
@@ -20,7 +32,7 @@ function createHtmlContent ( data ) {
     <header>
         <div class="header-title">
             <img src="Other/img/Logo_Ranked.png" alt="Logo">
-            <h1>Deck : ${ data.title }</h1>
+            <h1>Deck : ${ escapeHtml( data.title ) }</h1>
         </div>
         <a href="../index.html" class="back-btn">&#8592; Retour au Portail</a>
     </header>
@@ -61,7 +73,12 @@ function createHtmlContent ( data ) {
                     <h2 id="modal_title"></h2>
                 </div>
                 <div class="modal-gallery">
-                    <div class="galleria" id="galleria"></div>
+                    <div class="swiper" id="vehicleGallery">
+                        <div class="swiper-wrapper" id="swiperWrapper"></div>
+                        <div class="swiper-pagination"></div>
+                        <div class="swiper-button-next"></div>
+                        <div class="swiper-button-prev"></div>
+                    </div>
                 </div>
                 <div class="modal-body" id="modalDesc"></div>
             </div>
@@ -70,12 +87,9 @@ function createHtmlContent ( data ) {
     <style>
         ${ data.styles }
     </style>
-    <script
-        src="https://code.jquery.com/jquery-3.5.1.js"
-        integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
-        crossorigin="anonymous"
-    ></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/galleria/1.6.1/galleria.min.js"></script>
+    <!-- Swiper.js for gallery (modern, maintained, no jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <script>
         const vehicleList = ${ data.vehicles }
         const descriptionTemplate =
@@ -86,11 +100,29 @@ function createHtmlContent ( data ) {
             thumbnailStyle: '0'
         };
 
-        Galleria.loadTheme('https://cdnjs.cloudflare.com/ajax/libs/galleria/1.6.1/themes/classic/galleria.classic.min.js')
-        Galleria.run('.galleria')
-        Galleria.configure({
-            _toggleInfo: false
-        })
+        // Swiper gallery initialization
+        window.vehicleSwiper = null;
+
+        // XSS prevention
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return str;
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapeHtmlAttr(str) {
+            if (typeof str !== 'string') return str;
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
 
         document.querySelectorAll( '.close' ).forEach( ( item ) => {
             item.addEventListener( 'click', closeModal );
@@ -102,6 +134,42 @@ function createHtmlContent ( data ) {
         }
 
         document.querySelector( '#techTree' ).addEventListener( 'click', techTreeClickProcessor );
+
+        // Close modal function with Swiper cleanup
+        function closeModal(e) {
+            if (e) {
+                const isBackdrop = e.target.classList.contains('modal');
+                const isCloseBtn = e.target.classList.contains('close');
+                if (!isBackdrop && !isCloseBtn) return;
+                
+                if (isBackdrop) {
+                    e.target.style.display = 'none';
+                } else {
+                    let parent = e.target.parentNode;
+                    while (parent && !parent.classList.contains('modal')) {
+                        parent = parent.parentNode;
+                    }
+                    if (parent) parent.style.display = 'none';
+                }
+            } else {
+                document.querySelectorAll('.modal').forEach((modal) => {
+                    modal.style.display = 'none';
+                });
+            }
+
+            const visibleModals = [...document.querySelectorAll('.modal')].filter(m => m.style.display === 'block');
+            if (visibleModals.length === 0) {
+                document.querySelector('body').style.overflow = 'visible';
+            }
+
+            const displayModal = document.querySelector('#vehicleDisplayModal');
+            if (!displayModal || displayModal.style.display !== 'block') {
+                if (window.vehicleSwiper) {
+                    window.vehicleSwiper.destroy();
+                    window.vehicleSwiper = null;
+                }
+            }
+        }
 
         // Credits display function for exported tree
         function renderCreditsForDisplay( credits, container ) {
@@ -134,7 +202,7 @@ function createHtmlContent ( data ) {
                 tag.style.border = '1px solid ' + credit.color;
                 tag.style.color = credit.color;
                 const iconText = credit.icon ? credit.icon + ' ' : '';
-                tag.innerHTML = iconText + credit.value + ' (' + credit.typeName + ')';
+                tag.innerHTML = iconText + escapeHtml( credit.value ) + ' (' + escapeHtml( credit.typeName ) + ')';
                 creditsDiv.appendChild( tag );
             } );
 

@@ -8,7 +8,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>Our WT TT Maker</title>
 	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-	<link rel="stylesheet" href="style.css" title="Our WT TT Maker" />
+	<link rel="stylesheet" href="style.css" title="WT_TECH_TREE_MAKER_STYLES" />
 </head>
 
 <body>
@@ -23,15 +23,15 @@
 	<div id="techTreeMainDesc" name="techTreeMainDesc"></div>
 	<br /><br />
 	<nav>
-		<div id="navAdd">Add vehicle</div>
-		<div id="navEdit">Edit vehicle</div>
-		<div id="navDel">Delete vehicle</div>
-		<div id="navOrder">Vehicle ordering</div>
-		<div id="navBackup">Backup</div>
-		<div id="navExport">Export tree</div>
-		<div id="navClone">Clone WT Wiki</div>
-		<div id="navSettings">Settings</div>
-		<div id="navHide">Hide Menu</div>
+		<button id="navAdd" type="button">Add vehicle</button>
+		<button id="navEdit" type="button">Edit vehicle</button>
+		<button id="navDel" type="button">Delete vehicle</button>
+		<button id="navOrder" type="button">Vehicle ordering</button>
+		<button id="navBackup" type="button">Backup</button>
+		<button id="navExport" type="button">Export tree</button>
+		<button id="navClone" type="button">Clone WT Wiki</button>
+		<button id="navSettings" type="button">Settings</button>
+		<button id="navHide" type="button">Hide Menu</button>
 	</nav>
 
 	<div id="addModal" class="modal">
@@ -568,15 +568,24 @@
 				<h2 id="modal_title"></h2>
 			</div>
 			<div class="modal-gallery">
-				<div class="galleria" id="galleria"></div>
+				<div class="swiper" id="vehicleGallery">
+					<div class="swiper-wrapper" id="swiperWrapper"></div>
+					<div class="swiper-pagination"></div>
+					<div class="swiper-button-next"></div>
+					<div class="swiper-button-prev"></div>
+				</div>
 			</div>
 			<div class="modal-body" id="modalDesc"></div>
 		</div>
 	</div>
-	<script src="https://code.jquery.com/jquery-3.5.1.js"
-		integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/galleria/1.6.1/galleria.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<!-- Swiper.js for gallery (modern, maintained, no jQuery) -->
+	<!-- SRI hash to be generated: curl -s https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js | openssl dgst -sha384 -binary | openssl base64 -A -->
+	<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+	<!-- Tom Select for dropdowns (modern, no jQuery) -->
+	<!-- SRI hash to be generated: curl -s https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js | openssl dgst -sha384 -binary | openssl base64 -A -->
+	<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.default.css">
 	<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.28.0"></script>
 	<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.7.0"></script>
 	<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1.8.0"></script>

@@ -120,6 +120,9 @@ blockquote {
 }
 #vehicleDisplayModal .modal-content {
 	max-width: 900px;
+	max-height: 90vh;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
 #modalDesc h1,
@@ -131,20 +134,58 @@ blockquote {
 .modal-gallery {
 	display: flex;
 	flex-direction: column;
+	width: 100%;
+}
+
+.modal-gallery .swiper {
+	width: 100%;
+	height: 400px;
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+.modal-gallery .swiper-wrapper {
+	height: 100%;
+}
+
+.modal-gallery .swiper-slide {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #0d1117;
+}
+
+.modal-gallery .swiper-slide img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+	border-radius: 8px;
+}
+
+.modal-gallery .swiper-button-next,
+.modal-gallery .swiper-button-prev {
+	color: var(--accent_color) !important;
+}
+
+.modal-gallery .swiper-pagination-bullet {
+	background: var(--text_muted) !important;
+	opacity: 0.5;
+}
+
+.modal-gallery .swiper-pagination-bullet-active {
+	background: var(--accent_color) !important;
+	opacity: 1;
 }
 
 .modal-gallery .modal-body {
 	margin-top: 20px;
-	padding: 15px;
-	background-color: rgba(22, 27, 34, 0.8);
-	border-radius: 8px;
+	padding: 20px;
+	background-color: rgba(22, 27, 34, 0.9);
+	border-radius: 12px;
 	position: relative;
 	z-index: 1;
-}
-
-.flexWrapper {
-	width: 50%;
-	float: left;
+	max-width: 100%;
+	overflow-x: hidden;
 }
 
 .inputModalFlex {
@@ -159,10 +200,19 @@ blockquote {
 }
 
 .inputModalFlexChild {
-	padding: 3px;
+	padding: 8px;
 	width: -webkit-fit-content;
 	width: -moz-fit-content;
 	width: fit-content;
+	min-width: 200px;
+}
+
+.inputModalFlexChild label {
+	display: block;
+	margin-bottom: 6px;
+	font-weight: 500;
+	color: var(--text_col);
+	font-size: 0.9rem;
 }
 
 .flexTitle {
@@ -402,7 +452,9 @@ body {
 }
 
 .add-credit-input button:hover {
-	background-color: rgb(60, 120, 0);
+	background-color: #2ea043;
+	transform: translateY(-1px);
+	box-shadow: 0 4px 8px rgba(35, 134, 54, 0.4);
 }
 
 #deleteAllButton {
@@ -614,26 +666,57 @@ a {
 .tooltip {
 	position: relative;
 	display: inline-block;
+	margin-left: 6px;
+	cursor: help;
+}
+
+.tooltip {
+	color: var(--text_muted);
+	font-size: 0.85rem;
+	font-weight: bold;
+	transition: color 0.2s;
+}
+
+.tooltip:hover {
+	color: var(--accent_color);
 }
 
 .tooltip .tooltipText {
 	visibility: hidden;
-	width: 300px;
-	background-color: black;
-	text-align: center;
-	padding: 5px 0;
-	border-radius: 6px;
-
+	width: 280px;
+	background: var(--card_bg);
+	border: 1px solid var(--border_color);
+	text-align: left;
+	padding: 12px;
+	border-radius: 8px;
 	position: absolute;
-	z-index: 2;
+	z-index: 100;
+	left: 50%;
+	transform: translateX(-50%);
+	top: 100%;
+	margin-top: 8px;
+	color: var(--text_col);
+	font-size: 0.85rem;
+	line-height: 1.5;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	opacity: 0;
+	transition: opacity 0.2s, visibility 0.2s;
 }
 
 .tooltip:hover .tooltipText {
 	visibility: visible;
+	opacity: 1;
 }
 
-.tooltipText {
-	top: 30px
+.tooltipText::before {
+	content: '';
+	position: absolute;
+	top: -6px;
+	left: 50%;
+	transform: translateX(-50%);
+	border-left: 6px solid transparent;
+	border-right: 6px solid transparent;
+	border-bottom: 6px solid var(--border_color);
 }
 
 .folderTooltip {
@@ -701,40 +784,12 @@ a {
 	/* Black w/ opacity */
 }
 
-/* Modal Content/Box */
-.modal-content {
-	background-color: rgb(46, 66, 80);
-	margin: 5% auto;
-	/* 5% from the top and centered */
-	padding: 20px;
-	width: 100%;
-	/* Could be more or less, depending on screen size */
-	max-width: 750px;
-	max-height: 90vh;
-	overflow-y: auto;
-}
-
-.modal-gallery {
-	width: 100%;
-}
-
 /* The Close Button */
 .close {
 	color: rgb(255, 255, 255);
 	float: right;
 	font-size: 28px;
 	font-weight: bold;
-}
-
-.galleria {
-	width: 100%;
-	height: 400px;
-	background: #000;
-}
-
-.cke_wysiwyg_div,
-.cke_wysiwyg_frame {
-	background-color: black;
 }
 
 .close:hover,
@@ -757,11 +812,11 @@ a {
 }
 
 #followLoopWarning {
-	display: none;
+	display: block;
 }
 
 #followLoopWarning b {
-	color: red;
+	color: blue;
 }
 
 /* Modal Content */
@@ -876,7 +931,7 @@ nav {
 	font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
-nav div {
+nav button {
 	background: var(--card_bg);
 	padding: 8px 12px;
 	border-radius: 0 8px 8px 0;
@@ -888,19 +943,20 @@ nav div {
 	font-size: 0.85rem;
 	font-weight: 500;
 	margin-bottom: 2px;
+	color: var(--text_col);
 }
 
-nav div:hover {
+nav button:hover {
 	background: var(--hover_color);
 	border-color: var(--accent_color);
 	transform: translateX(3px);
 }
 
-nav div:nth-child(odd) {
+nav button:nth-child(odd) {
 	background: var(--card_bg);
 }
 
-nav div:nth-child(odd):hover {
+nav button:nth-child(odd):hover {
 	background: var(--hover_color);
 }
 
@@ -928,6 +984,7 @@ nav div:nth-child(odd):hover {
 	overflow-y: auto;
 	position: relative;
 	margin: 5% auto;
+	padding: 20px;
 	box-shadow: var(--shadow);
 	animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -981,13 +1038,15 @@ input[type="text"],
 input[type="number"],
 select,
 textarea {
-	background: var(--bg_color);
+	background: var(--hover_color);
 	border: 1px solid var(--border_color);
-	border-radius: 6px;
-	padding: 8px 12px;
+	border-radius: 8px;
+	padding: 10px 14px;
 	color: var(--text_col);
 	font-size: 0.9rem;
 	transition: all 0.2s;
+	width: 100%;
+	box-sizing: border-box;
 }
 
 input[type="text"]:focus,
@@ -1106,28 +1165,32 @@ textarea:focus {
 }
 
 .credit-type-btn {
-	padding: 6px 12px;
+	padding: 8px 16px;
 	border: 1px solid var(--border_color);
-	border-radius: 20px;
+	border-radius: 24px;
 	background: var(--tech_tree_bg);
 	color: var(--text_col);
 	cursor: pointer;
 	transition: all 0.2s;
-	font-size: 0.85rem;
+	font-size: 0.9rem;
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .credit-type-btn:hover {
 	border-color: var(--accent_color);
 	background: var(--hover_color);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .credit-type-btn.active {
 	background: var(--accent_gradient);
 	border-color: var(--accent_color);
 	color: white;
+	box-shadow: 0 4px 12px rgba(240, 173, 78, 0.4);
 }
 
 .credit-entry {
@@ -1186,7 +1249,8 @@ textarea:focus {
 	border-radius: 6px;
 	padding: 8px 16px;
 	cursor: pointer;
-	font-weight: 500;
+	font-weight: 600;
+	box-shadow: 0 2px 4px rgba(35, 134, 54, 0.3);
 }
 
 /* Credits Display in Vehicle Modal */

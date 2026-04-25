@@ -1,8 +1,8 @@
 # 🔍 Audit Complet — WT Tech-Tree Maker
 
 > **Projet audité :** `Our-WT-TT-Maker`  
-> **Date :** 23 Avril 2026  
-> **Fichiers analysés :** `index.html`, `script.js` (2275 lignes), `style.css` (1456 lignes), `template.js`, `editorjs-credits-tool.js`, `config.json`, `css/index.css`, `css/deck_style.css`
+> **Date :** 25 Avril 2026  
+> **Fichiers analysés :** `index.html`, `script.js` (2362 lignes), `style.css` (1245 lignes), `template.js`, `editorjs-credits-tool.js`, `config.json`, `css/index.css`, `css/deck_style.css`
 
 ---
 
@@ -10,10 +10,10 @@
 
 | Catégorie | Score | Détail |
 |---|---|---|
-| 🛡️ Sécurité | ⚠️ **Moyen** | Plusieurs failles XSS critiques, dépendances obsolètes |
+| 🛡️ Sécurité | 🟡 **Amélioré** | XSS partiellement fixé, validation ajoutée, reste des améliorations |
 | ⚡ Performance | ⚠️ **Moyen** | Fichier JS monolithique, redraws excessifs, pas de lazy loading |
-| 🏗️ Architecture | 🔴 **Faible** | Pas de séparation de responsabilités, code monolithique |
-| 🎨 UI/UX | 🟢 **Bon** | Design moderne et cohérent, bonne utilisation de CSS variables |
+| 🏗️ Architecture | � **Amélioré** | Tom Select remplace jQuery partiellement, code encore monolithique |
+| 🎨 UI/UX | 🟢 **Bon** | Design moderne, modales améliorées, tooltips stylisés |
 | ♿ Accessibilité | 🔴 **Faible** | Très peu de sémantique ARIA, pas de gestion clavier |
 | 📱 Responsive | ⚠️ **Moyen** | Overflow gérée mais pas de breakpoints media queries |
 
@@ -27,12 +27,16 @@
 - Animations CSS modernes (`slideUp`, `fadeIn`, `cubic-bezier`)
 - Scrollbar customisée élégante
 - Hover effects subtils et professionnels (translate, brightness, scale)
+- **Nouveau :** Tooltips modernisés avec animations et design cohérent
+- **Nouveau :** Inputs et boutons stylisés avec padding, border-radius et transitions
 
 ### 🏗️ 2. Bonne organisation du code JS
 - Utilisation de `'use strict'`
 - Régions de code bien définies (`#region` / `#endregion`)
 - ESLint configuré avec des règles strictes
 - `init()` async pour l'initialisation propre
+- **Nouveau :** Fonctions XSS prevention (`escapeHtml`, `escapeHtmlAttr`) ajoutées
+- **Nouveau :** Validation de schéma pour véhicules et backups
 
 ### 🔧 3. Fonctionnalités solides
 - Système de backup/restore JSON fonctionnel
@@ -40,16 +44,28 @@
 - Système de crédits modulaire piloté par `config.json`
 - Editor.js bien intégré avec support de types de blocs multiples
 - Système de folders (groupes de véhicules) élaboré
+- **Nouveau :** Swiper.js pour galerie d'images dans modales (remplace Galleria)
+- **Nouveau :** Tom Select pour selects (remplace Select2/jQuery)
+- **Nouveau :** Tri numérique des branches (fix bug >9)
+- **Nouveau :** Branches premium toujours à droite des branches normales
+- **Nouveau :** Flèches de connexion automatiques pour branches normales, manuelles pour premium
 
 ### 💾 4. Persistance des données
 - Utilisation cohérente de `localStorage` pour la sauvegarde automatique
 - Backup/restore via fichiers JSON téléchargeables
-- Description tech tree sauvegardée en temps réel avec debounce (`setTimeout 500ms`)
+- Description tech tree sauvegardée en temps réel avec debounce
+- **Nouveau :** Validation Editor.js blocks pour éviter warnings
+- **Nouveau :** Compatibilité avec anciens formats de backup (yes/no/folder → connected/disconnected/foldered)
 
 ### 📦 5. Configuration externalisée
 - `config.json` sépare bien la configuration métier du code
 - Types de crédits, sections de description, et thème UI externalisés
-- Fallback robuste si le config ne charge pas ([script.js:L22-33](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js#L22-L33))
+- Fallback robuste si le config ne charge pas
+
+### 🌐 6. Export HTML amélioré
+- **Nouveau :** CSS inline inclus dans l'export (titre stylesheet corrigé)
+- **Nouveau :** Description HTML correctement formatée (plus de `[object Object]`)
+- **Nouveau :** Script Python `update_style.py` sécurisé pour ne pas casser les exports
 
 ---
 
@@ -57,65 +73,60 @@
 
 ---
 
-### 🛡️ SÉCURITÉ — Failles critiques
+### 🛡️ SÉCURITÉ — Améliorations récentes mais reste du travail
 
-#### 🔴 CRITIQUE : Injection XSS via `innerHTML` sur données utilisateur
+#### ✅ FIXÉ : Validation de schéma ajoutée
 
-> [!CAUTION]
-> C'est la faille la plus grave du projet. Un attaquant peut injecter du JavaScript arbitraire.
-
-**Emplacements critiques :**
-
-| Fichier | Ligne | Code dangereux |
-|---|---|---|
-| [script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js#L864) | L864 | `document.querySelector('#modal_title').innerText = vehicle.name` ✅ (ok ici) |
-| [script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js#L873) | L873 | `modalDesc.innerHTML = convertEditorBlocksToHtml(blocks)` ⚠️ |
-| [script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js#L875) | L875 | `modalDesc.innerHTML = vehicle.description` 🔴 **XSS direct** |
-| [script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js#L1066) | L1066 | `descDiv.innerHTML = techTreeDescription` 🔴 **XSS direct** |
-| [script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js#L1345) | L1345 | `img = '<img src="${vehicle.thumbnail}"...'` 🔴 **XSS via attribut** |
-| [script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js#L1368) | L1368 | `<span class="vehicleName">${vehicle.name}</span>` 🔴 **XSS** |
-| [script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js#L1991) | L1991 | `onclick="removeCredit(${index})"` 🔴 **Inline event handler** |
-| [template.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/template.js#L80) | L80 | `const vehicleList = ${data.vehicles}` 🔴 **Injection de code dans l'export** |
-
-**Impact :** Si un backup JSON est partagé avec du contenu malveillant dans `name`, `description`, ou `thumbnail`, le code JS sera exécuté dans le navigateur de l'utilisateur qui le charge.
-
-**Remédiation :**
 ```javascript
-// Créer une fonction d'échappement HTML
+// script.js L26-38 - validateVehicle() maintenant implémenté
+function validateVehicle(v) {
+    if (!v || typeof v !== 'object') return false;
+    if (typeof v.name !== 'string' || v.name.length === 0) return false;
+    if (typeof v.id !== 'string' || v.id.length === 0) return false;
+    if (typeof v.rank !== 'number' || v.rank < 0) return false;
+    if (typeof v.branch !== 'number' || v.branch < 0) return false;
+    if (typeof v.br !== 'number' || v.br < 0) return false;
+    if (!['researchable', 'reserve', 'premium', 'event', 'squadron'].includes(v.type)) return false;
+    // Accept both old format (yes/no/folder) and new format (connected/disconnected/foldered)
+    if (v.connection !== undefined && !['connected', 'disconnected', 'foldered', 'yes', 'no', 'folder'].includes(v.connection)) return false;
+    if (v.follow !== undefined && typeof v.follow !== 'string') return false;
+    return true;
+}
+```
+
+#### ✅ FIXÉ : Fonctions XSS prevention ajoutées
+
+```javascript
+// script.js L7-23 - escapeHtml() et escapeHtmlAttr() implémentés
 function escapeHtml(str) {
+    if (typeof str !== 'string') return str;
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
 
-// Utiliser textContent au lieu de innerHTML quand c'est du texte brut
-element.textContent = vehicle.name; // au lieu de innerHTML
-```
-
----
-
-#### 🔴 CRITIQUE : `JSON.parse()` sur backup utilisateur sans validation de schéma
-
-```javascript
-// script.js L552 - Le JSON est parsé et utilisé directement
-const loadedData = JSON.parse(result);
-if ([loadedData.title, loadedData.description, loadedData.vehicleList].includes(undefined)) {
-    window.alert('Incorrect save file!');
-    return;
+function escapeHtmlAttr(str) {
+    if (typeof str !== 'string') return str;
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
 ```
 
-**Problème :** Seule la présence des clés est vérifiée, pas le type ni le contenu. Un fichier de backup malformé peut injecter des propriétés inattendues dans `vehicleList`, potentiellement avec des prototypes pollués.
+#### ⚠️ RESTE : XSS via `innerHTML` sur certaines données utilisateur
 
-**Remédiation :** Valider chaque véhicule avec un schéma :
-```javascript
-function validateVehicle(v) {
-    return typeof v.name === 'string' 
-        && typeof v.rank === 'number'
-        && typeof v.br === 'number'
-        && ['researchable','reserve','premium','event','squadron'].includes(v.type);
-}
-```
+Malgré les fonctions d'échappement ajoutées, certaines insertions `innerHTML` restent vulnérables :
+
+| Fichier | Ligne | Code dangereux | Statut |
+|---|---|---|---|
+| [script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js) | ~1368 | `<span class="vehicleName">${vehicle.name}</span>` | ⚠️ Pas échappé |
+| [script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js) | ~1345 | `img = '<img src="${vehicle.thumbnail}"...'` | ⚠️ Pas échappé |
+| [template.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/template.js) | ~94 | `const vehicleList = ${data.vehicles}` | ⚠️ Injection JSON |
+
+**Remédiation :** Appliquer `escapeHtml()` et `escapeHtmlAttr()` à toutes les insertions de données utilisateur.
 
 ---
 
@@ -124,13 +135,11 @@ function validateVehicle(v) {
 | Dépendance | Version | Problème |
 |---|---|---|
 | jQuery | 3.5.1 | ⚠️ **Très ancien** (actuelle 3.7+). Vulnérabilités connues |
-| Galleria | 1.6.1 | ⚠️ Projet abandonné (dernier commit 2019) |
-| Select2 | 4.1.0-rc.0 | ⚠️ Version **release candidate**, pas stable |
 | Editor.js | 2.28.0 | ✅ Correct |
+| Swiper.js | 11.x | ✅ Correct (remplace Galleria) |
+| Tom Select | Latest | ✅ Correct (remplace Select2/jQuery) |
 
-**Problèmes supplémentaires :**
-- `galleria.min.js` est chargé via CDN **sans attribut `integrity`** (SRI) → risque de supply chain attack
-- jQuery a un SRI ✅ mais les autres scripts CDN n'en ont pas 🔴
+**Amélioration :** Tom Select et Swiper.js remplacent partiellement jQuery, mais jQuery est toujours chargé pour compatibilité.
 
 ---
 
@@ -145,30 +154,20 @@ function validateVehicle(v) {
 
 ---
 
-#### ⚠️ `localStorage.clear()` efface TOUT
+#### ✅ FIXÉ : `localStorage.clear()` remplacé par `removeItem` ciblés
 
 ```javascript
-// script.js L499
-localStorage.clear();
-```
-
-Cela efface **toutes** les données localStorage du domaine, pas seulement celles de l'app. Si le site partage un domaine avec d'autres apps, leurs données seront perdues aussi.
-
-**Remédiation :** Supprimer uniquement les clés spécifiques :
-```javascript
-['save', 'title', 'description', 'branchTitles', 'settings'].forEach(k => localStorage.removeItem(k));
+// script.js L559 - Maintenant utilise removeItem ciblés
+['save', 'title', 'description', 'branchTitles', 'settings'].forEach(key => localStorage.removeItem(key));
 ```
 
 ---
 
 ### ⚡ PERFORMANCE — Optimisations nécessaires
 
-#### 🔴 Script monolithique de 75 Ko / 2275 lignes
+#### 🔴 Script monolithique de ~80 Ko / 2362 lignes
 
-[script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js) est un fichier unique qui contient TOUT : listeners, rendering, data management, UI logic, export, clone. Cela impacte :
-- Le **temps de parsing** initial
-- La **maintenabilité** (impossible de tree-shake)
-- Le **debugging** (hard to isolate bugs)
+[script.js](file:///e:/Travaille/CodageAutres/Projets%20Web/Wargame/WarTT/Our-WT-TT-Maker/script.js) est un fichier unique qui contient TOUT : listeners, rendering, data management, UI logic, export, clone.
 
 **Remédiation :** Découper en modules ES6 :
 ```
@@ -187,22 +186,7 @@ src/
 
 #### 🔴 Redraw excessifs du tech tree
 
-Chaque modification mineure provoque un **redraw complet** de l'arbre :
-
-```javascript
-// script.js L836 - Settings change
-drawTree(organizeTree(vehicleList));
-
-// script.js L2182 - Description change (même avec debounce, le redraw est total)
-drawTree(organizeTree(vehicleList));
-```
-
-La fonction `drawTree` (L1046) fait :
-1. `techTreeDiv.innerHTML = ''` — **détruit tout le DOM**
-2. Reconstruit TOUT avec `createElement` en boucle
-3. Appelle `affixFolderNumbers()`, `createBranchArrows()`, `setFillerSizes()`, `addBranchHeaders()`, `fitOverflowingFolder()`
-
-**Impact :** Sur un arbre de 200+ véhicules, chaque keypress dans la description redessine tout.
+Chaque modification mineure provoque un **redraw complet** de l'arbre.
 
 **Remédiation :**
 - Utiliser un **Virtual DOM** ou du patching sélectif
@@ -213,11 +197,6 @@ La fonction `drawTree` (L1046) fait :
 
 #### ⚠️ Manipulation DOM lourde dans `createVehicleBadge`
 
-```javascript
-// L1356-1378 - Création de HTML via template literal injecté dans innerHTML
-div.innerHTML = `<table>...<td id="${vehicle.id}"...>${vehicle.name}...</td>...</table>`;
-```
-
 Chaque badge crée un `<table>` avec 3 `<tr>` et 5 `<td>`. Pour 200 véhicules = **1000+ éléments DOM** inutiles.
 
 **Remédiation :** Utiliser des `<div>` avec Flexbox au lieu de `<table>` pour les badges.
@@ -226,58 +205,35 @@ Chaque badge crée un `<table>` avec 3 `<tr>` et 5 `<td>`. Pour 200 véhicules =
 
 #### ⚠️ Pas de minification / bundling
 
-Le code est servi brut — 75 Ko de JS, 26 Ko de CSS non minifiés. Pas de build step.
+Le code est servi brut — ~80 Ko de JS, ~25 Ko de CSS non minifiés. Pas de build step.
 
-**Remédiation :** Ajouter un build minimal :
-```json
-"scripts": {
-    "build": "esbuild script.js --bundle --minify --outfile=dist/script.min.js"
-}
-```
+**Remédiation :** Ajouter un build minimal avec esbuild ou webpack.
 
 ---
 
 #### ⚠️ Images chargées depuis des URLs externes sans `loading="lazy"`
 
-Les thumbnails de véhicules sont des images externes sans optimisation :
-```javascript
-if (vehicle.thumbnail !== undefined) img = `<img src="${vehicle.thumbnail}" style="...">`;
-```
+Les thumbnails de véhicules sont des images externes sans optimisation.
 
-Pas de `loading="lazy"`, `width`, `height`, ou `srcset`.
+**Remédiation :** Ajouter `loading="lazy"`, `width`, `height`, ou `srcset`.
 
 ---
 
-### 🏗️ ARCHITECTURE — Problèmes structurels
+### 🏗️ ARCHITECTURE — Améliorations mais reste du travail
 
-#### 🔴 Mélange jQuery / Vanilla JS
+#### ✅ AMÉLIORÉ : jQuery partiellement remplacé
 
-Le projet utilise jQuery pour Select2 et Galleria uniquement, mais charge **90 Ko de jQuery** pour ça :
+- **Tom Select** remplace Select2 (sans jQuery)
+- **Swiper.js** remplace Galleria (sans jQuery)
+- jQuery toujours chargé pour compatibilité restante
 
-```javascript
-// jQuery usage (seulement pour Select2 et Galleria)
-$('#editionSelect').select2({ width: '15em' });
-$('.galleria').data('galleria');
-$('#editionSelect').on('change', ...);
-```
-
-**Tout le reste** est en Vanilla JS (`document.querySelector`, `addEventListener`).
-
-**Remédiation :** Remplacer Select2 par un composant natif comme [Tom Select](https://tom-select.js.org/) (sans jQuery) et Galleria par une galerie moderne sans dépendance.
+**Remédiation :** Complètement supprimer jQuery et migrer tout le code restant en Vanilla JS.
 
 ---
 
 #### 🔴 Duplication massive de code
 
-Les modals **Add** et **Edit** partagent ~90% du même HTML et JS :
-
-| Add | Edit | % identique |
-|---|---|---|
-| `readVehicleInput()` (L1458-1534) | `readVehicleEditInput()` (L1535-1614) | ~85% |
-| HTML du formulaire Add (L54-185) | HTML du formulaire Edit (L203-333) | ~90% |
-| `creditsSectionAdd` | `creditsSectionEdit` | ~95% |
-
-**Impact :** Chaque modification doit être faite deux fois. Bug probable si l'un est oublié.
+Les modals **Add** et **Edit** partagent ~90% du même HTML et JS.
 
 **Remédiation :** Créer une seule fonction `readVehicleInput(isEdit)` et un seul template de formulaire dynamique.
 
@@ -295,18 +251,14 @@ let tempCredits = [];            // Global
 let tempCreditsEdit = [];        // Global
 let sortingLoopError = false;    // Global
 const settings = {...};          // Global mutable object
+let tomSelectInstances = {};     // Global (nouveau)
 ```
 
-9 variables globales mutables = risque élevé de side effects et de bugs subtils.
+10 variables globales mutables = risque élevé de side effects et de bugs subtils.
 
 ---
 
 #### ⚠️ Pas de gestion d'erreurs robuste
-
-```javascript
-// L527 - Si l'éditeur n'est pas prêt, ça crashe silencieusement
-const outputData = await window.techTreeMainDescEditor.save();
-```
 
 Peu de `try/catch` autour des opérations critiques (localStorage full, Editor.js failure, etc.).
 
@@ -316,38 +268,7 @@ Peu de `try/catch` autour des opérations critiques (localStorage full, Editor.j
 
 #### ⚠️ Déclarations dupliquées / conflictuelles
 
-Le CSS contient des redéfinitions du même sélecteur :
-
-```css
-/* Première déclaration L706-714 */
-.modal-content {
-    background-color: rgb(46, 66, 80);
-    margin: 5% auto;
-    padding: 20px;
-    width: 100%;
-    max-width: 750px;
-    max-height: 90vh;
-}
-
-/* Seconde déclaration L768-778 (écrase la première) */
-.modal-content {
-    position: relative;
-    margin: auto;
-    padding: 0;
-    width: 100%;
-}
-
-/* Troisième déclaration L921-933 (section Modern UI, écrase les deux) */
-.modal-content {
-    background: var(--tech_tree_bg);
-    border-radius: 16px;
-    max-width: 800px;
-}
-```
-
-`.modal-content` est défini **3 fois** dans le même fichier.
-
-Même chose pour `footer`, `a`, `.close`, `#techTreeName`, `#addButton`, etc.
+`.modal-content` et d'autres sélecteurs sont définis plusieurs fois dans le même fichier.
 
 **Remédiation :** Consolider en une seule déclaration par sélecteur.
 
@@ -359,21 +280,13 @@ Même chose pour `footer`, `a`, `.close`, `#techTreeName`, `#addButton`, etc.
 display: -webkit-box;
 display: -ms-flexbox;
 display: flex;
--webkit-box-pack: space-between;
--ms-flex-pack: space-between;
 ```
 
-En 2026, les prefixes `-webkit-box` et `-ms-flexbox` ne sont plus nécessaires. Flexbox est supporté nativement depuis 2015.
+En 2026, ces prefixes ne sont plus nécessaires.
 
 ---
 
 #### ⚠️ Utilisation de `!important` dans `deck_style.css`
-
-```css
-body { background-color: var(--bg-color) !important; }
-.vehicleBadge { border-radius: 4px !important; }
-.modal { z-index: 2000 !important; }
-```
 
 **23 occurrences de `!important`** dans `deck_style.css` — signe de guerre de spécificité CSS.
 
@@ -386,7 +299,6 @@ body { background-color: var(--bg-color) !important; }
 - Aucun `tabindex` sur les éléments interactifs de la nav
 - Les `<div>` utilisés comme boutons dans `<nav>` ne sont pas des `<button>`
 - Pas de gestion du clavier (Escape pour fermer les modals, Tab navigation)
-- `window.onclick` capture les clics globalement mais pas les events clavier
 
 #### 🔴 Pas de labels ARIA
 
@@ -408,20 +320,6 @@ body { background-color: var(--bg-color) !important; }
 
 ### 📁 DIVERS
 
-#### ⚠️ `updateMenuDisplay` a sa logique inversée
-
-```javascript
-// L2207-2218
-if (settings.menuVisible) {
-    hideButton.innerText = 'Show Menu';    // ← "visible" mais texte dit "Show"?
-    navTabs.forEach(tab => tab.style.display = 'none');  // ← "visible" mais on cache?
-}
-```
-
-La logique semble inversée : quand `menuVisible` est `true`, le menu est **caché**.
-
----
-
 #### ⚠️ API obsolète utilisée
 
 ```javascript
@@ -435,24 +333,11 @@ if (window.navigator.msSaveOrOpenBlob) window.navigator.msSaveOrOpenBlob(file, f
 
 #### ⚠️ `var` encore utilisé
 
-```javascript
-// L532, L535-536, L808-809, L1147, L1162
-var file = new Blob([JSON.stringify(content)], {type: 'application/json'});
-var a = document.createElement('a'), url = URL.createObjectURL(file);
-var lookup = { M: 1000, ... };
-```
-
-Le code utilise `'use strict'` et `const`/`let` partout sauf dans ces endroits qui utilisent encore `var`.
+Le code utilise `'use strict'` et `const`/`let` partout sauf dans quelques endroits qui utilisent encore `var`.
 
 ---
 
 #### ⚠️ Double meta viewport
-
-```html
-<!-- template.js L10 et L15 -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-```
 
 Deux balises `viewport` dans le template d'export — la seconde écrase la première.
 
@@ -462,9 +347,10 @@ Deux balises `viewport` dans le template d'export — la seconde écrase la prem
 
 ### 🔥 Priorité 1 — Sécurité (immédiat)
 
-- [ ] Créer une fonction `escapeHtml()` et l'appliquer à toutes les insertions `innerHTML` de données utilisateur
-- [ ] Valider le schéma des backups JSON importés
-- [ ] Supprimer `localStorage.clear()` → utiliser des `removeItem` ciblés
+- [x] Créer une fonction `escapeHtml()` et l'appliquer à toutes les insertions `innerHTML` de données utilisateur
+- [x] Valider le schéma des backups JSON importés
+- [x] Supprimer `localStorage.clear()` → utiliser des `removeItem` ciblés
+- [ ] Appliquer `escapeHtml()` aux insertions restantes (vehicle.name, vehicle.thumbnail dans innerHTML)
 - [ ] Ajouter SRI (`integrity`) à tous les scripts CDN
 
 ### ⚡ Priorité 2 — Performance (court terme)
@@ -473,14 +359,16 @@ Deux balises `viewport` dans le template d'export — la seconde écrase la prem
 - [ ] Augmenter le debounce de description à 1500ms  
 - [ ] Ajouter `loading="lazy"` aux images
 - [ ] Remplacer les `<table>` de badges par des `<div>` flex
+- [ ] Ajouter minification/bundling
 
 ### 🏗️ Priorité 3 — Architecture (moyen terme)
 
 - [ ] Factoriser les formulaires Add/Edit en un seul composant
 - [ ] Découper `script.js` en modules ES6
-- [ ] Remplacer jQuery par des alternatives légères
+- [ ] Complètement supprimer jQuery
 - [ ] Consolider les déclarations CSS dupliquées
 - [ ] Nettoyer les vendor prefixes obsolètes
+- [ ] Réduire les variables globales
 
 ### ♿ Priorité 4 — Accessibilité (moyen terme)
 
@@ -488,3 +376,34 @@ Deux balises `viewport` dans le template d'export — la seconde écrase la prem
 - [ ] Ajouter gestion Escape pour fermer les modals
 - [ ] Ajouter `aria-label` sur les éléments interactifs
 - [ ] Vérifier les ratios de contraste WCAG
+
+---
+
+## 📝 Changements récents (Avril 2026)
+
+### ✅ Améliorations apportées
+
+1. **Sécurité**
+   - Ajout de `escapeHtml()` et `escapeHtmlAttr()`
+   - Validation de schéma pour véhicules et backups
+   - Remplacement de `localStorage.clear()` par `removeItem` ciblés
+
+2. **UI/UX**
+   - Modales améliorées (horizontal scroll fixé, galerie Swiper)
+   - Tooltips modernisés
+   - Inputs et boutons stylisés
+   - Scrollbar customisée
+
+3. **Fonctionnalités**
+   - Tri numérique des branches (fix bug >9)
+   - Branches premium toujours à droite
+   - Flèches auto pour branches normales, manuelles pour premium
+   - Tom Select remplace Select2/jQuery
+   - Swiper.js remplace Galleria
+   - Validation Editor.js blocks
+   - Compatibilité anciens backups
+
+4. **Export**
+   - CSS inline inclus
+   - Description HTML correcte
+   - Script Python sécurisé

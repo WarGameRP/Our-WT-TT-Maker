@@ -3,6 +3,55 @@
 'use strict';
 /* eslint-disable no-undef */
 
+// XSS prevention: escape HTML to prevent injection attacks
+function escapeHtml(str) {
+	if (typeof str !== 'string') return str;
+	const div = document.createElement('div');
+	div.textContent = str;
+	return div.innerHTML;
+}
+
+// Escape HTML for use in attributes (e.g., src, href)
+function escapeHtmlAttr(str) {
+	if (typeof str !== 'string') return str;
+	return str
+		.replace(/&/g, '&amp;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
+}
+
+// Validate vehicle schema to prevent malicious data injection
+function validateVehicle(v) {
+	if (!v || typeof v !== 'object') return false;
+	if (typeof v.name !== 'string' || v.name.length === 0) return false;
+	if (typeof v.id !== 'string' || v.id.length === 0) return false;
+	if (typeof v.rank !== 'number' || v.rank < 0) return false;
+	if (typeof v.branch !== 'number' || v.branch < 0) return false;
+	if (typeof v.br !== 'number' || v.br < 0) return false;
+	if (!['researchable', 'reserve', 'premium', 'event', 'squadron'].includes(v.type)) return false;
+	// Accept both old format (yes/no/folder) and new format (connected/disconnected/foldered)
+	if (v.connection !== undefined && !['connected', 'disconnected', 'foldered', 'yes', 'no', 'folder'].includes(v.connection)) return false;
+	if (v.follow !== undefined && typeof v.follow !== 'string') return false;
+	return true;
+}
+
+// Validate backup JSON schema
+function validateBackup(data) {
+	if (!data || typeof data !== 'object') return false;
+	if (typeof data.title !== 'string') return false;
+	if (data.description !== undefined && typeof data.description !== 'object' && typeof data.description !== 'string') return false;
+	if (!Array.isArray(data.vehicleList)) return false;
+	
+	// Validate each vehicle
+	for (const v of data.vehicleList) {
+		if (!validateVehicle(v)) return false;
+	}
+	
+	return true;
+}
+
 const vehicleList = [];
 let branchTitles = {};
 let config = null;
@@ -10,6 +59,7 @@ let creditTypes = [];
 let currentCreditType = null;
 let tempCredits = [];
 let tempCreditsEdit = [];
+let tomSelectInstances = {};
 
 // Load configuration
 async function loadConfig() {
@@ -355,7 +405,7 @@ document.querySelector( '#navEdit' ).addEventListener( 'click', () => {
 } );
 
 document.querySelector( '#editButton' ).addEventListener( 'click', async () => {
-	const readSuccessful = await readVehicleEditInput();
+	const readSuccessful = await readVehicleInput( true );
 	if ( readSuccessful ) {
 		localStorage.setItem( 'save', JSON.stringify( vehicleList ) );
 		fillEditSelection( vehicleList );
@@ -365,7 +415,7 @@ document.querySelector( '#editButton' ).addEventListener( 'click', async () => {
 		updateVehicleOrderList();
 	}
 } );
-$( '#editionSelect' ).on( 'change', ( e ) => {
+document.querySelector( '#editionSelect' ).addEventListener( 'change', ( e ) => {
 	if ( e.target.value === 'undefined' ) return;
 	document.querySelector( '#vehicleImageListEdit' ).innerHTML = '';
 	const vehicleId = e.target.value;
@@ -453,7 +503,7 @@ document.querySelector( '#vehicleTypeEdit' ).addEventListener( 'change', ( e ) =
 // #endregion Edit modal listeners
 
 // #region Delete modal listeners
-$( '#deleteVehicleSelect' ).on( 'change', ( e ) => {
+document.querySelector( '#deleteVehicleSelect' ).addEventListener( 'change', ( e ) => {
 	if ( e.target.value === 'undefined' ) return;
 	const vehicle = vehicleList.find( ( vehicle ) => {
 		return vehicle.id === e.target.value;
@@ -505,7 +555,8 @@ document.querySelector( '#deleteAllButton' ).addEventListener( 'click', () => {
 				} ).catch( e => console.error( 'Editor clear error:', e ) );
 			} );
 		}
-		localStorage.clear();
+		// Only remove app-specific keys, not entire localStorage
+		['save', 'title', 'description', 'branchTitles', 'settings'].forEach(key => localStorage.removeItem(key));
 
 		const organizedVehicles = organizeTree( vehicleList );
 		drawTree( organizedVehicles );
@@ -559,7 +610,7 @@ document.querySelector( '#loadBackup' ).addEventListener( 'click', () => {
 	file.text().then( ( result ) => {
 		try {
 			const loadedData = JSON.parse( result );
-			if ( [ loadedData.title, loadedData.description, loadedData.vehicleList ].includes( undefined ) ) {
+			if ( !validateBackup( loadedData ) ) {
 				window.alert( 'Incorrect save file! Make sure you upload correct save file!' );
 				return;
 			}
@@ -602,6 +653,10 @@ document.querySelector( '#loadBackup' ).addEventListener( 'click', () => {
 				}
 				vehicleList.splice( 0, vehicleList.length );
 				loadedData.vehicleList.forEach( ( element ) => {
+					// Convert old connection format to new format
+					if (element.connection === 'yes') element.connection = 'connected';
+					else if (element.connection === 'no') element.connection = 'disconnected';
+					else if (element.connection === 'folder') element.connection = 'foldered';
 					vehicleList.push( element );
 				} );
 				fillEditSelection( vehicleList );
@@ -871,17 +926,49 @@ function techTreeClickProcessor ( e ) {
 		} );
 		if ( !isClickable( vehicle ) ) return;
 		document.querySelector( '#modal_title' ).innerText = vehicle.name;
+		
+		// Initialize Swiper gallery with vehicle images
+		const swiperWrapper = document.querySelector( '#swiperWrapper' );
+		swiperWrapper.innerHTML = '';
+
 		if ( vehicle.images && vehicle.images.length > 0 ) {
-			const galleria = $( '.galleria' ).data( 'galleria' );
-			if ( galleria ) {
-				galleria.load( [ ...vehicle.images ] );
+			vehicle.images.forEach( imgData => {
+				const slide = document.createElement( 'div' );
+				slide.className = 'swiper-slide';
+				const img = document.createElement( 'img' );
+				img.src = escapeHtmlAttr( imgData.image );
+				img.alt = escapeHtmlAttr( imgData.description || 'Vehicle image' );
+				img.loading = 'lazy';
+				slide.appendChild( img );
+				swiperWrapper.appendChild( slide );
+			} );
+
+			// Initialize or update Swiper
+			const hasMultipleImages = vehicle.images.length > 1;
+			if ( window.vehicleSwiper ) {
+				window.vehicleSwiper.update();
+			} else {
+				window.vehicleSwiper = new Swiper( '#vehicleGallery', {
+					loop: hasMultipleImages,
+					pagination: {
+						el: '.swiper-pagination',
+						clickable: true
+					},
+					navigation: {
+						nextEl: '.swiper-button-next',
+						prevEl: '.swiper-button-prev'
+					},
+					centeredSlides: true,
+					spaceBetween: 10
+				} );
 			}
 		}
+		
 		// Convert Editor.js JSON to HTML for display
 		if ( vehicle.description && typeof vehicle.description === 'object' && vehicle.description.blocks ) {
 			document.querySelector( '#modalDesc' ).innerHTML = convertEditorBlocksToHtml( vehicle.description.blocks );
 		} else if ( typeof vehicle.description === 'string' ) {
-			document.querySelector( '#modalDesc' ).innerHTML = vehicle.description;
+			document.querySelector( '#modalDesc' ).innerHTML = escapeHtml( vehicle.description );
 		} else {
 			document.querySelector( '#modalDesc' ).innerHTML = '<p>No description available.</p>';
 		}
@@ -889,14 +976,6 @@ function techTreeClickProcessor ( e ) {
 		if ( vehicle.credits && vehicle.credits.length > 0 ) {
 			renderCreditsForDisplay( vehicle.credits, document.querySelector( '#modalDesc' ) );
 		}
-		const info = document.querySelector( '.galleria-info' );
-		info.style.width = 'fit-content';
-		info.style.left = 'auto';
-		info.style.bottom = '50px';
-		info.style.top = 'auto';
-		info.style.right = '0px';
-		document.querySelector( '.galleria-info-text' ).style.backgroundColor = 'RGBA(0, 0, 0, 0.85)';
-		document.querySelector( '.galleria-info-text' ).style.padding = '3px';
 		document.querySelector( '#vehicleDisplayModal' ).style.display = 'block';
 		document.querySelector( 'body' ).style.overflow = 'hidden';
 	}
@@ -1052,6 +1131,33 @@ function isFollowApplied ( array ) {
 	}
 	return true;
 }
+function drawTreeDescription() {
+	const techTreeDiv = document.querySelector( '#techTree' );
+	const existingDesc = techTreeDiv.querySelector( '.tech-tree-main-description' );
+	if ( existingDesc ) existingDesc.remove();
+
+	const techTreeDescription = localStorage.getItem( 'description' );
+	if ( techTreeDescription ) {
+		try {
+			const parsedDesc = JSON.parse( techTreeDescription );
+			if ( parsedDesc.blocks && parsedDesc.blocks.length > 0 ) {
+				const descDiv = document.createElement( 'div' );
+				descDiv.className = 'tech-tree-main-description';
+				descDiv.innerHTML = convertEditorBlocksToHtml( parsedDesc.blocks );
+				techTreeDiv.insertBefore( descDiv, techTreeDiv.firstChild );
+			}
+		} catch ( e ) {
+			// If not JSON, it's likely an old plain text description
+			if ( techTreeDescription.trim() !== '' ) {
+				const descDiv = document.createElement( 'div' );
+				descDiv.className = 'tech-tree-main-description';
+				descDiv.innerHTML = `<p>${ escapeHtml( techTreeDescription ) }</p>`;
+				techTreeDiv.insertBefore( descDiv, techTreeDiv.firstChild );
+			}
+		}
+	}
+}
+
 function drawTree ( organizedVehicles ) {
 	const techTreeDiv = document.querySelector( '#techTree' );
 	techTreeDiv.innerHTML = '';
@@ -1072,7 +1178,7 @@ function drawTree ( organizedVehicles ) {
 			if ( techTreeDescription.trim() !== '' ) {
 				const descDiv = document.createElement( 'div' );
 				descDiv.className = 'tech-tree-main-description';
-				descDiv.innerHTML = `<p>${ techTreeDescription }</p>`;
+				descDiv.innerHTML = `<p>${ escapeHtml( techTreeDescription ) }</p>`;
 				techTreeDiv.appendChild( descDiv );
 			}
 		}
@@ -1094,7 +1200,19 @@ function drawTree ( organizedVehicles ) {
 		}
 	}
 	ranks.sort( ( a, b ) => Number( a ) - Number( b ) );
-	branches.sort();
+	branches.sort( ( a, b ) => {
+		// Premium branches should always come after normal branches
+		const aIsPremium = a.startsWith( 'premium_' );
+		const bIsPremium = b.startsWith( 'premium_' );
+		
+		if ( aIsPremium && !bIsPremium ) return 1;
+		if ( !aIsPremium && bIsPremium ) return -1;
+		
+		// Extract numeric part for comparison within same type
+		const aNum = parseInt( a.replace( 'premium_', '' ) );
+		const bNum = parseInt( b.replace( 'premium_', '' ) );
+		return aNum - bNum;
+	} );
 	const techTree = document.querySelector( '#techTree' );
 	techTree.innerHTML = '';
 	for ( const rank of ranks ) {
@@ -1222,12 +1340,21 @@ function createBranchArrows () {
 		const gapsToFill = [];
 		let tmpArr = [];
 
+		// Check if this is a premium branch
+		const isPremiumBranch = line.includes( 'premium_' );
+
 		trimmedLine.forEach( node => {
 			const isVehicle = node.classList.contains( 'vehicleBadge' ) ;
 			if ( !isVehicle ) {
 				tmpArr.push( node );
 			} else {
-				if ( node.classList.contains( 'connected_yes' ) ) {
+				// Premium branches: manual connection (depends on connected_yes)
+				// Normal branches: auto-connect all vehicles
+				if ( isPremiumBranch ) {
+					if ( node.classList.contains( 'connected_yes' ) ) {
+						gapsToFill.push( tmpArr );
+					}
+				} else {
 					gapsToFill.push( tmpArr );
 				}
 				tmpArr = [];
@@ -1351,7 +1478,7 @@ function createVehicleBadge ( vehicle ) {
 		1: 'max-height: 100%; max-width: 100%',
 		2: 'height: 100%; width: 100%'
 	}[ settings.thumbnailStyle ];
-	if ( vehicle.thumbnail !== undefined ) img = `<img src="${ vehicle.thumbnail }" style="${ imgStyle }">`;
+	if ( vehicle.thumbnail !== undefined ) img = `<img src="${ escapeHtmlAttr( vehicle.thumbnail ) }" style="${ imgStyle }" loading="lazy">`;
 	let svg = '';
 	if ( vehicle.classIcon ) {
 		svg = createSvg( classIcons.find( classIcon => classIcon.id === vehicle.classIcon ) );
@@ -1374,7 +1501,7 @@ function createVehicleBadge ( vehicle ) {
 class="vehicleBadge type_${ vehicle.type } ${ branchLine }
 connected_${ vehicle.connection }"
 style="position:relative; ${ isClickable( vehicle ) ? 'cursor:pointer;' : '' }">
-<span class="vehicleName">${ vehicle.name }</span>
+<span class="vehicleName">${ escapeHtml( vehicle.name ) }</span>
 <b class="vehicleBr">${ brLabel }</b>
 ${ img }
 ${ svg }
@@ -1464,41 +1591,44 @@ function createSvg ( icon ) {
 // #endregion Vehicle badge functions
 
 // #region Miscellaneous menu functions
-async function readVehicleInput () {
-	const name = document.querySelector( '#vehicleName' ).value.trim();
+async function readVehicleInput ( isEdit = false ) {
+	const suffix = isEdit ? 'Edit' : '';
+	const name = document.querySelector( `#vehicleName${suffix}` ).value.trim();
 	if ( name.length === 0 ) {
 		window.alert( 'You have to provide name of the vehicle!' );
 		return false;
 	}
-	const rank = Number( document.querySelector( '#vehicleRank' ).value );
+	const rank = Number( document.querySelector( `#vehicleRank${suffix}` ).value );
 	if ( !/^[0-9]{1,2}$/.test( rank.toString() ) ) {
 		window.alert( 'Rank has to be a natural number between 0 and 99!' );
 		return false;
 	}
-	const br = Number( document.querySelector( '#vehicleBr' ).value );
+	const br = Number( document.querySelector( `#vehicleBr${suffix}` ).value );
 	if ( ( !/^\d+\.\d$/.test( br ) && !/^\d+$/.test( br ) ) || br < 0 || br >= 100 ) {
 		window.alert( 'Battle rating must have one or zero decimal places, and be a non-negative number less than 100!' );
 		return false;
 	}
-	const type = document.querySelector( '#vehicleType' ).value;
-	const connection = document.querySelector( '#vehicleConnection' ).value;
-	const branch = Number( document.querySelector( '#vehicleBranch' ).value );
+	const type = document.querySelector( `#vehicleType${suffix}` ).value;
+	const connection = document.querySelector( `#vehicleConnection${suffix}` ).value;
+	const branch = Number( document.querySelector( `#vehicleBranch${suffix}` ).value );
 	if (branch < 1) {
 		window.alert('Branch has to be a natural number greater than 0!');
 		return false;
 	}
-	const classIconInput = document.querySelector( 'input[name="classIcons"]:checked' );
+	const classIconInput = document.querySelector( `input[name="classIcons${suffix}"]:checked` );
 	let classIcon = classIconInput ? classIconInput.value : 'none';
 	if ( classIcon === 'none' ) {
 		classIcon = undefined;
 	}
-	const follow = document.querySelector( '#vehicleFollow' ).value;
-	const outputData = await window.vehicleDescriptionEditor.save(); const description = outputData;
-	const id = 'v' + Date.now();
-	const thumbnail = document.querySelector( '#vehicleThumbnail' ).value;
+	const follow = document.querySelector( `#vehicleFollow${suffix}` ).value;
+	const editor = isEdit ? window.vehicleDescriptionEditEditor : window.vehicleDescriptionEditor;
+	const outputData = await editor.save();
+	const description = outputData;
+	const id = isEdit ? document.querySelector( '#editionSelect' ).value : 'v' + Date.now();
+	const thumbnail = document.querySelector( `#vehicleThumbnail${suffix}` ).value;
 	const images = [];
 	document
-		.querySelector( '#vehicleImageList' )
+		.querySelector( `#vehicleImageList${suffix}` )
 		.querySelectorAll( 'li' )
 		.forEach( ( item ) => {
 			const image = item.querySelectorAll( 'input' )[ 0 ].value;
@@ -1506,7 +1636,7 @@ async function readVehicleInput () {
 			if ( image ) images.push( { image, description } );
 		} );
 
-	const credits = getCreditsArray( false );
+	const credits = getCreditsArray( isEdit );
 
 	const vehicle = {
 		name,
@@ -1523,14 +1653,29 @@ async function readVehicleInput () {
 		images,
 		credits
 	};
-	vehicleList.push( vehicle );
-	document.querySelector( '#newForm' ).reset();
-	document.querySelector( '#none' ).checked = true;
-	tempCredits = [];
-	renderCreditsList( false );
-	if ( window.vehicleDescriptionEditor && window.vehicleDescriptionEditor.render ) {
-		window.vehicleDescriptionEditor.isReady.then( () => {
-			window.vehicleDescriptionEditor.render( {
+
+	if ( isEdit ) {
+		vehicleList.forEach( ( element, index, array ) => {
+			if ( element.id === vehicle.id ) {
+				array[ index ] = vehicle;
+			}
+		} );
+	} else {
+		vehicleList.push( vehicle );
+	}
+
+	document.querySelector( isEdit ? '#editForm' : '#newForm' ).reset();
+	document.querySelector( isEdit ? '#noneEdit' : '#none' ).checked = true;
+	if ( isEdit ) {
+		tempCreditsEdit = [];
+		renderCreditsList( true );
+	} else {
+		tempCredits = [];
+		renderCreditsList( false );
+	}
+	if ( editor && editor.render ) {
+		editor.isReady.then( () => {
+			editor.render( {
 				blocks: [ {
 					type: 'paragraph',
 					data: { text: '' }
@@ -1541,86 +1686,7 @@ async function readVehicleInput () {
 	closeModal();
 	return true;
 }
-async function readVehicleEditInput () {
-	const name = document.querySelector( '#vehicleNameEdit' ).value.trim();
-	if ( name.length === 0 ) {
-		window.alert( 'You have to provide name of the vehicle!' );
-		return false;
-	}
-	const rank = Number( document.querySelector( '#vehicleRankEdit' ).value );
-	if ( !/^[0-9]{1,2}$/.test( rank.toString() ) ) {
-		window.alert( 'Rank has to be a natural number between 0 and 99!' );
-		return false;
-	}
-	const br = Number( document.querySelector( '#vehicleBrEdit' ).value );
-	if ( ( !/^\d+\.\d$/.test( br ) && !/^\d+$/.test( br ) ) || br < 0 || br >= 100 ) {
-		window.alert( 'Battle rating must have one or zero decimal places, and be a non-negative number less than 100!' );
-		return false;
-	}
-	const type = document.querySelector( '#vehicleTypeEdit' ).value;
-	const connection = document.querySelector( '#vehicleConnectionEdit' ).value;
-	const branch = Number( document.querySelector( '#vehicleBranchEdit' ).value );
-	if (branch < 1) {
-		window.alert('Branch has to be a natural number greater than 0!');
-		return false;
-	}
-	let classIcon = document.querySelector( 'input[name="classIconsEdit"]:checked' ).value;
-	if ( classIcon === 'none' ) {
-		classIcon = undefined;
-	}
-	const follow = document.querySelector( '#vehicleFollowEdit' ).value;
-	const outputData = await window.vehicleDescriptionEditEditor.save(); const description = outputData;
-	if ( window.vehicleDescriptionEditEditor && window.vehicleDescriptionEditEditor.render ) {
-		window.vehicleDescriptionEditEditor.isReady.then( () => {
-			window.vehicleDescriptionEditEditor.render( {
-				blocks: [ {
-					type: 'paragraph',
-					data: { text: '' }
-				} ]
-			} ).catch( e => console.error( 'Editor clear error:', e ) );
-		} );
-	}
-	const id = document.querySelector( '#editionSelect' ).value;
-	const thumbnail = document.querySelector( '#vehicleThumbnailEdit' ).value;
-	const images = [];
-	document
-		.querySelector( '#vehicleImageListEdit' )
-		.querySelectorAll( 'li' )
-		.forEach( ( item ) => {
-			const image = item.querySelectorAll( 'input' )[ 0 ].value;
-			const description = item.querySelectorAll( 'input' )[ 1 ].value.trim();
-			if ( image ) images.push( { image, description } );
-		} );
 
-	const credits = getCreditsArray( true );
-
-	const vehicle = {
-		name,
-		rank,
-		br,
-		type,
-		connection,
-		branch,
-		classIcon,
-		follow,
-		description,
-		id,
-		thumbnail,
-		images,
-		credits
-	};
-	vehicleList.forEach( ( element, index, array ) => {
-		if ( element.id === vehicle.id ) {
-			array[ index ] = vehicle;
-		}
-	} );
-	document.querySelector( '#editForm' ).reset();
-	document.querySelector( '#noneEdit' ).checked = true;
-	tempCreditsEdit = [];
-	renderCreditsList( true );
-	closeModal();
-	return true;
-}
 function fillEditSelection ( vehicleList ) {
 	const selectArr = [
 		document.querySelector( '#editionSelect' ),
@@ -1628,6 +1694,13 @@ function fillEditSelection ( vehicleList ) {
 		document.querySelector( '#vehicleFollowEdit' ),
 		document.querySelector( '#deleteVehicleSelect' )
 	];
+	
+	// Clear Tom Select options first to remove cached data
+	if (tomSelectInstances.editionSelect) tomSelectInstances.editionSelect.clearOptions();
+	if (tomSelectInstances.vehicleFollow) tomSelectInstances.vehicleFollow.clearOptions();
+	if (tomSelectInstances.vehicleFollowEdit) tomSelectInstances.vehicleFollowEdit.clearOptions();
+	if (tomSelectInstances.deleteVehicleSelect) tomSelectInstances.deleteVehicleSelect.clearOptions();
+	
 	selectArr.forEach( ( item ) => {
 		item.innerHTML = '';
 	} );
@@ -1653,6 +1726,11 @@ function fillEditSelection ( vehicleList ) {
 			select.appendChild( option );
 		}
 	}
+	// Sync Tom Select instances with updated options
+	if (tomSelectInstances.editionSelect) tomSelectInstances.editionSelect.sync();
+	if (tomSelectInstances.vehicleFollow) tomSelectInstances.vehicleFollow.sync();
+	if (tomSelectInstances.vehicleFollowEdit) tomSelectInstances.vehicleFollowEdit.sync();
+	if (tomSelectInstances.deleteVehicleSelect) tomSelectInstances.deleteVehicleSelect.sync();
 }
 function updateVehicleOrderList () {
 	const tbody = document.querySelector( '#vehicleOrderList' );
@@ -1672,7 +1750,7 @@ function updateVehicleOrderList () {
 		}
 		targets.push( target );
 		const tr = document.createElement( 'tr' );
-		tr.innerHTML = `<td>${ target.name }</td><td>➡️</td><td>${ follower.name }</td><th class="removeConnection">Remove this connection</th>`;
+		tr.innerHTML = `<td>${ escapeHtml( target.name ) }</td><td>➡️</td><td>${ escapeHtml( follower.name ) }</td><th class="removeConnection">Remove this connection</th>`;
 		tr.id = follower.id;
 		tbody.appendChild( tr );
 	}
@@ -1832,15 +1910,13 @@ function closeModal ( e ) {
 		document.querySelector( 'body' ).style.overflow = 'visible';
 	}
 
-	// Galleria cleanup - only if galleria modal is not visible
+	// Swiper cleanup - only if vehicle display modal is not visible
 	const displayModal = document.querySelector( '#vehicleDisplayModal' );
 	if ( !displayModal || displayModal.style.display !== 'block' ) {
-		const galleria = $( '.galleria' ).data( 'galleria' );
-		if ( galleria ) {
-			galleria.splice( 0, galleria.getDataLength() );
-			galleria.destroy();
+		if ( window.vehicleSwiper ) {
+			window.vehicleSwiper.destroy();
+			window.vehicleSwiper = null;
 		}
-		Galleria.run( '.galleria' );
 	}
 }
 function fillClassSelection ( edit ) {
@@ -1995,8 +2071,8 @@ function renderCreditsList( edit = false ) {
 		const iconHtml = credit.icon ? `<span class="credit-icon">${ credit.icon }</span>` : '';
 		entry.innerHTML = `
 			${ iconHtml }
-			<span class="credit-value">${ credit.value }</span>
-			<span class="credit-type">${ credit.typeName }</span>
+			<span class="credit-value">${ escapeHtml( credit.value ) }</span>
+			<span class="credit-type">${ escapeHtml( credit.typeName ) }</span>
 			<span class="remove-credit" onclick="removeCredit(${ index }, ${ edit })">❌</span>
 		`;
 
@@ -2021,7 +2097,7 @@ function renderCreditsForDisplay( credits, container ) {
 		tag.style.border = `1px solid ${ credit.color }`;
 		tag.style.color = credit.color;
 		const iconText = credit.icon ? `${ credit.icon } ` : '';
-		tag.innerHTML = `${ iconText }${ credit.value } (${ credit.typeName })`;
+		tag.innerHTML = `${ iconText }${ escapeHtml( credit.value ) } (${ escapeHtml( credit.typeName ) })`;
 		creditsDiv.appendChild( tag );
 	} );
 
@@ -2047,18 +2123,11 @@ async function init () {
 	// Load configuration first
 	await loadConfig();
 
-	// Modal slideshow initialization
-	Galleria.loadTheme( 'https://cdnjs.cloudflare.com/ajax/libs/galleria/1.6.1/themes/classic/galleria.classic.min.js' );
-	Galleria.run( '.galleria' );
-	Galleria.configure( {
-		_toggleInfo: false
-	} );
-
-	// Enabling advanced selection
-	$( '#editionSelect' ).select2( { width: '15em' } );
-	$( '#vehicleFollow' ).select2( { width: '15em' } );
-	$( '#vehicleFollowEdit' ).select2( { width: '15em' } );
-	$( '#deleteVehicleSelect' ).select2( { width: '15em' } );
+	// Enabling advanced selection with Tom Select (no jQuery)
+	tomSelectInstances.editionSelect = new TomSelect( '#editionSelect', { width: '15em' } );
+	tomSelectInstances.vehicleFollow = new TomSelect( '#vehicleFollow', { width: '15em' } );
+	tomSelectInstances.vehicleFollowEdit = new TomSelect( '#vehicleFollowEdit', { width: '15em' } );
+	tomSelectInstances.deleteVehicleSelect = new TomSelect( '#deleteVehicleSelect', { width: '15em' } );
 
 	// Text editor initialization
 	const descriptionTemplate = {
@@ -2130,9 +2199,18 @@ async function init () {
 	if ( techTreeDescriptionSave ) {
 		try {
 			initialTechTreeDescription = JSON.parse( techTreeDescriptionSave );
-			// Ensure it has at least one block for Editor.js stability
-			if ( !initialTechTreeDescription.blocks || initialTechTreeDescription.blocks.length === 0 ) {
+			// Validate and sanitize blocks for Editor.js
+			if ( !initialTechTreeDescription.blocks || !Array.isArray( initialTechTreeDescription.blocks ) || initialTechTreeDescription.blocks.length === 0 ) {
 				initialTechTreeDescription.blocks = [ { type: 'paragraph', data: { text: '' } } ];
+			} else {
+				// Filter out invalid blocks
+				initialTechTreeDescription.blocks = initialTechTreeDescription.blocks.filter( block => {
+					return block && typeof block === 'object' && block.type && block.data && typeof block.data === 'object';
+				} );
+				// Ensure at least one valid block remains
+				if ( initialTechTreeDescription.blocks.length === 0 ) {
+					initialTechTreeDescription.blocks = [ { type: 'paragraph', data: { text: '' } } ];
+				}
 			}
 		} catch ( e ) {
 			// If not JSON, it's likely an old plain text description
@@ -2188,8 +2266,8 @@ async function init () {
 			onChangeTimeout = setTimeout( async () => {
 				const outputData = await window.techTreeMainDescEditor.save();
 				localStorage.setItem( 'description', JSON.stringify( outputData ) );
-				drawTree( organizeTree( vehicleList ) );
-			}, 500 );
+				drawTreeDescription();
+			}, 1500 );
 		}
 	});
 
@@ -2215,15 +2293,15 @@ async function init () {
 }
 function updateMenuDisplay () {
 	const hideButton = document.querySelector( '#navHide' );
-	const navTabs = [ ...document.querySelectorAll( 'nav div' ) ]
-		.filter( div => div.id !== 'navHide' );
+	const navTabs = [ ...document.querySelectorAll( 'nav button' ) ]
+		.filter( button => button.id !== 'navHide' );
 
 	if ( settings.menuVisible ) {
-		hideButton.innerText = 'Show Menu';
-		navTabs.forEach( tab => tab.style.display = 'none' );
-	} else {
 		hideButton.innerText = 'Hide Menu';
 		navTabs.forEach( tab => tab.style.display = 'block' );
+	} else {
+		hideButton.innerText = 'Show Menu';
+		navTabs.forEach( tab => tab.style.display = 'none' );
 	}
 }
 
